@@ -10,7 +10,7 @@ import { db as firestore } from './firebase';
 import { doc, getDoc, setDoc } from "firebase/firestore";
 // ==========================================
 // 1. MOCK DATABASE & STATE MANAGEMENT
-// =========================================
+// ==========================================
 const INITIAL_DATA = {
   grades: [
     { id: 'g10', name: 'Khối 10' },
