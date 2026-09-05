@@ -558,6 +558,7 @@ function StudentDashboard({ currentUser, db, setDb, showToast, onLogout }) {
   );
 }
 // ==========================================
+// ==========================================
 // 7b. Quiz Player Sub-component (Đã tối ưu giao diện & hiển thị đáp án)
 // ==========================================
 function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
@@ -589,7 +590,7 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
      submitQuiz();
   };
 
- const submitQuiz = () => {
+  const submitQuiz = () => {
      let earned = 0;
      const total = quiz.questions?.length || 1;
      
@@ -631,33 +632,6 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
         attemptNum: existingAttempts.length + 1,
         date: new Date().toLocaleString('vi-VN'),
         duration: durationText // Lưu thời gian làm bài thực tế
-     };
-
-     const updatedStudents = db.studentsList.map(s =>
-        s.id === currentUser.linkedStudentId ? { ...s, done: (s.done || 0) + 1 } : s
-     );
-     
-     setDb({ 
-        ...db, 
-        studentsList: updatedStudents,
-        quizAttempts: [...(db.quizAttempts || []), newAttempt]
-     });
-     
-     showToast('Nộp bài thành công!');
-     setIsFinished(true); 
-  };
-     
-     const calculatedScore = ((earned / total) * 10).toFixed(2);
-     setFinalScore(calculatedScore);
-
-     const existingAttempts = db.quizAttempts?.filter(a => a.studentId === currentUser.linkedStudentId && a.quizId === quiz.id) || [];
-     const newAttempt = {
-        id: `att${Date.now()}`,
-        studentId: currentUser.linkedStudentId,
-        quizId: quiz.id,
-        score: calculatedScore,
-        attemptNum: existingAttempts.length + 1,
-        date: new Date().toLocaleString('vi-VN')
      };
 
      const updatedStudents = db.studentsList.map(s =>
@@ -844,7 +818,6 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
     </div>
   );
 }
-
 // ==========================================
 // 8. TEACHER DASHBOARD
 // ==========================================
