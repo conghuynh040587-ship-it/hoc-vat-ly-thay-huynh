@@ -534,7 +534,6 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
                 )}
               </div>
       
-          )}
         </div>
       </div>
     </div>
