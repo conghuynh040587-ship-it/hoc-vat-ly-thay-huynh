@@ -170,16 +170,15 @@ export default function App() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  useEffect(() => {
+ useEffect(() => {
     async function loadData() {
       try {
         const docRef = doc(firestore, "appData", "mainDB");
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setDb(docSnap.data());
-        } else {
-          await setDoc(docRef, INITIAL_DATA);
-        }
+        
+        // --- THÊM DÒNG NÀY ĐỂ GHI ĐÈ DỮ LIỆU MỚI LÊN FIREBASE ---
+        await setDoc(docRef, INITIAL_DATA);
+        setDb(INITIAL_DATA);
+        
       } catch (err) {
         console.error("Lỗi tải dữ liệu từ Firebase:", err);
       } finally {
