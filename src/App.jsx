@@ -331,6 +331,9 @@ function StudentLinkProfile({ setRoute, currentUser, setCurrentUser, db, setDb, 
 // ==========================================
 // 7. STUDENT DASHBOARD
 // ==========================================
+// ==========================================
+// 7. STUDENT DASHBOARD (ĐÃ TỐI ƯU MOBILE)
+// ==========================================
 function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
   const studentInfo = db.studentsList.find(s => s.id === currentUser.linkedStudentId);
   const classInfo = db.classes.find(c => c.id === studentInfo?.classId);
@@ -340,6 +343,7 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [activeTab, setActiveTab] = useState('theory'); 
   const [activeQuiz, setActiveQuiz] = useState(null); 
+  const [showMobileMenu, setShowMobileMenu] = useState(false); // Trạng thái ẩn/hiện mục lục trên mobile
 
   const toggleChapter = (chapId) => setExpandedChapters(prev => ({ ...prev, [chapId]: !prev[chapId] }));
 
@@ -352,37 +356,61 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
+      {/* HEADER: Thu nhỏ chữ và ép trên 1 hàng ngang */}
       <header className="bg-blue-700 text-white shadow-md">
-        <div className="px-6 py-3 flex justify-between items-center">
-          <h1 className="text-xl font-bold uppercase tracking-wider">HỌC VẬT LÝ CÙNG THẦY LÊ CÔNG HUYNH</h1>
-          <button onClick={() => setRoute('landing')} className="flex items-center gap-2 hover:bg-blue-600 px-3 py-1 rounded">
-            <LogOut size={16}/> Đăng xuất
+        <div className="px-3 py-2 flex justify-between items-center">
+          <h1 className="text-xs sm:text-lg md:text-xl font-bold uppercase tracking-wider truncate mr-2">
+            HỌC VẬT LÝ CÙNG THẦY LÊ CÔNG HUYNH
+          </h1>
+          <button onClick={() => setRoute('landing')} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 px-2.5 py-1 rounded text-xs sm:text-sm whitespace-nowrap">
+            <LogOut size={14}/> Đăng xuất
           </button>
         </div>
-        <div className="bg-blue-800 text-blue-100 text-sm py-1 overflow-hidden">
+        <div className="bg-blue-800 text-blue-100 text-xs sm:text-sm py-1 overflow-hidden">
           <marquee scrollamount="5">Vật lý không khó - Đã có thầy Huynh lo! Chúc các em học tập thật tốt và đạt kết quả cao trong các kỳ thi sắp tới.</marquee>
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-full md:w-1/3 bg-gray-50 border-r border-gray-200 flex flex-col">
-          <div className="p-4 bg-blue-50 border-b border-blue-100">
-            <div className="font-semibold text-blue-800 text-lg flex items-center gap-2">
-              <User size={20}/> {studentInfo?.name}
-            </div>
-            <div className="text-sm text-blue-600">
-              Lớp: {classInfo?.name} | Đề đã làm: {studentInfo?.done}/{studentInfo?.total}
-            </div>
+      {/* THÔNG TIN HỌC SINH: Dạng 1 dòng ngang trên mobile */}
+      <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 flex flex-row justify-between items-center text-xs sm:text-sm">
+        <div className="font-semibold text-blue-900 flex items-center gap-1.5 truncate">
+          <User size={16} className="text-blue-700 shrink-0"/> 
+          <span className="truncate">{studentInfo?.name}</span>
+        </div>
+        <div className="text-blue-800 shrink-0 font-medium">
+          Lớp: <span className="font-bold">{classInfo?.name}</span> | Đã làm: <span className="font-bold text-green-700">{studentInfo?.done}/{studentInfo?.total}</span>
+        </div>
+      </div>
+
+      {/* NÚT BẬT/TẮT MỤC LỤC TRÊN ĐIỆN THOẠI */}
+      <div className="md:hidden bg-gray-100 p-2 border-b flex justify-between items-center">
+        <button 
+          onClick={() => setShowMobileMenu(!showMobileMenu)} 
+          className="w-full bg-blue-600 text-white py-2 px-3 rounded font-medium text-sm flex items-center justify-center gap-2 shadow-sm"
+        >
+          <BookOpen size={16} /> {showMobileMenu ? 'Ẩn mục lục bài học' : '📚 Mở mục lục bài học'}
+        </button>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* MỤC LỤC BÀI HỌC: Ẩn/Hiện linh hoạt trên mobile, giữ nguyên trên PC */}
+        <div className={`
+          ${showMobileMenu ? 'absolute inset-0 z-20 bg-white w-full h-full' : 'hidden'} 
+          md:flex md:w-1/3 bg-gray-50 border-r border-gray-200 flex-col overflow-y-auto
+        `}>
+          <div className="p-4 bg-gray-100 border-b flex justify-between items-center md:hidden">
+            <h3 className="font-bold text-gray-700">MỤC LỤC BÀI HỌC</h3>
+            <button onClick={() => setShowMobileMenu(false)} className="text-red-600 font-bold px-2 py-1 bg-red-50 rounded">Đóng [X]</button>
           </div>
           
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            <h3 className="font-bold text-gray-700 mb-4 border-b pb-2">MỤC LỤC BÀI HỌC</h3>
+            <h3 className="font-bold text-gray-700 mb-4 border-b pb-2 hidden md:block">MỤC LỤC BÀI HỌC</h3>
             {chapters.map(chap => {
               const lessons = db.lessons.filter(l => l.chapterId === chap.id);
               const isOpen = expandedChapters[chap.id];
               return (
                 <div key={chap.id} className="border border-gray-200 rounded-md bg-white">
-                  <button onClick={() => toggleChapter(chap.id)} className="w-full text-left p-3 flex justify-between items-center hover:bg-gray-50 font-medium">
+                  <button onClick={() => toggleChapter(chap.id)} className="w-full text-left p-3 flex justify-between items-center hover:bg-gray-50 font-medium text-sm sm:text-base">
                     {chap.name}
                     {isOpen ? <ChevronDown size={16}/> : <ChevronRight size={16}/>}
                   </button>
@@ -391,8 +419,11 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
                       {lessons.map(les => (
                         <button 
                           key={les.id} 
-                          onClick={() => setSelectedLesson(les.id)}
-                          className={`w-full text-left p-2 pl-6 rounded text-sm transition-colors ${selectedLesson === les.id ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100 text-gray-600'}`}
+                          onClick={() => {
+                            setSelectedLesson(les.id);
+                            setShowMobileMenu(false); // Chọn bài xong tự động ẩn mục lục trên mobile
+                          }}
+                          className={`w-full text-left p-2 pl-6 rounded text-sm transition-colors truncate ${selectedLesson === les.id ? 'bg-blue-100 text-blue-700 font-bold' : 'hover:bg-gray-100 text-gray-600'}`}
                         >
                           • {les.name}
                         </button>
@@ -404,6 +435,60 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
             })}
           </div>
         </div>
+
+        {/* NỘI DUNG CHÍNH: Tên bài ép trên 1 dòng */}
+        <div className="w-full md:w-2/3 bg-white p-4 sm:p-6 overflow-y-auto flex flex-col">
+          {!selectedLesson ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 py-12">
+              <BookOpen size={54} className="mb-4 opacity-50" />
+              <p className="text-center text-sm sm:text-base">Chọn một bài học ở danh sách bên trái để bắt đầu</p>
+            </div>
+          ) : (
+            <>
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-4 truncate w-full">
+                {db.lessons.find(l=>l.id===selectedLesson)?.name}
+              </h2>
+              
+              <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
+                <button onClick={() => setActiveTab('theory')} className={`px-3 sm:px-4 py-2 text-sm sm:text-base font-medium flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap ${activeTab === 'theory' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                  <FileText size={16}/> Lý thuyết
+                </button>
+                <button onClick={() => setActiveTab('video')} className={`px-3 sm:px-4 py-2 text-sm sm:text-base font-medium flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap ${activeTab === 'video' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                  <Video size={16}/> Video thí nghiệm
+                </button>
+                <button onClick={() => setActiveTab('quiz')} className={`px-3 sm:px-4 py-2 text-sm sm:text-base font-medium flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap ${activeTab === 'quiz' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                  <FileQuestion size={16}/> Đề ôn tập - Kiểm tra
+                </button>
+              </div>
+
+              <div className="flex-1">
+                {materialsForLesson.filter(m => m.type === activeTab).length === 0 ? (
+                  <p className="text-gray-500 italic text-sm">Chưa có dữ liệu cho mục này.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {materialsForLesson.filter(m => m.type === activeTab).map(mat => (
+                      <div key={mat.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                        <h4 className="font-bold text-base sm:text-lg mb-2">{mat.name}</h4>
+                        {mat.type === 'theory' || mat.type === 'video' ? (
+                           <a href={mat.link} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm inline-block font-medium">Xem chi tiết (Mở link)</a>
+                        ) : (
+                           <div>
+                              <p className="text-xs sm:text-sm text-gray-600 mb-3"><Clock size={14} className="inline mr-1"/> Thời gian: {mat.quizConfig?.time} phút | Số lần làm: {mat.quizConfig?.attempts}</p>
+                              <button onClick={() => setActiveQuiz(mat)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm font-medium">Bắt đầu làm bài</button>
+                           </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
         <div className="w-full md:w-2/3 bg-white p-6 overflow-y-auto flex flex-col">
           {!selectedLesson ? (
