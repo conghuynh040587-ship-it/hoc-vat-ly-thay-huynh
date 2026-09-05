@@ -329,7 +329,7 @@ function StudentLinkProfile({ setRoute, currentUser, setCurrentUser, db, setDb, 
 }
 
 // ==========================================
-// 7. STUDENT DASHBOARD (HOÀN HẢO CÂN ĐỐI MOBILE)
+// 7. STUDENT DASHBOARD (THU NHỎ SIZE CHỮ HEADER)
 // ==========================================
 function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
   const studentInfo = db.studentsList.find(s => s.id === currentUser.linkedStudentId);
@@ -353,19 +353,15 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* HEADER: Thêm khoảng cách mt-2 cho nút đăng xuất để không bị dính chữ */}
+      {/* HEADER: Thu nhỏ size chữ tiêu đề (text-[11px] trên mobile) và bố trí gọn gàng */}
       <header className="bg-blue-700 text-white shadow-md">
-        <div className="px-3 py-2.5 flex flex-col gap-1">
-          <div className="flex justify-between items-center">
-            <h1 className="text-xs sm:text-lg md:text-xl font-bold uppercase tracking-wide leading-snug text-center w-full">
-              HỌC VẬT LÝ CÙNG THẦY LÊ CÔNG HUYNH
-            </h1>
-          </div>
-          <div className="flex justify-end mt-1">
-            <button onClick={() => setRoute('landing')} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded text-xs whitespace-nowrap shadow-sm font-medium">
-              <LogOut size={13}/> Đăng xuất
-            </button>
-          </div>
+        <div className="px-3 py-2 flex flex-col sm:flex-row justify-between items-center gap-2">
+          <h1 className="text-[11px] sm:text-base md:text-xl font-bold uppercase tracking-wide leading-tight text-center sm:text-left">
+            HỌC VẬT LÝ CÙNG THẦY LÊ CÔNG HUYNH
+          </h1>
+          <button onClick={() => setRoute('landing')} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 px-2.5 py-1 rounded text-xs whitespace-nowrap shadow-sm font-medium shrink-0">
+            <LogOut size={13}/> Đăng xuất
+          </button>
         </div>
         <div className="bg-blue-800 text-blue-100 text-xs py-1 overflow-hidden border-t border-blue-600">
           <marquee scrollamount="5">Vật lý không khó - Đã có thầy Huynh lo! Chúc các em học tập thật tốt và đạt kết quả cao trong các kỳ thi sắp tới.</marquee>
