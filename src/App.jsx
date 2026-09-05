@@ -589,7 +589,7 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
      submitQuiz();
   };
 
-  const submitQuiz = () => {
+ const submitQuiz = () => {
      let earned = 0;
      const total = quiz.questions?.length || 1;
      
@@ -611,6 +611,41 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
            }
         });
      }
+     
+     const calculatedScore = ((earned / total) * 10).toFixed(2);
+     setFinalScore(calculatedScore);
+
+     // --- TÍNH THỜI GIAN THỰC TẾ HỌC SINH LÀM BÀI ---
+     const totalTimeAllowed = (quiz.quizConfig?.time || 45) * 60;
+     const secondsSpent = totalTimeAllowed - timeLeft;
+     const minutesDone = Math.floor(secondsSpent / 60);
+     const secondsDone = secondsSpent % 60;
+     const durationText = minutesDone > 0 ? `${minutesDone} phút ${secondsDone} giây` : `${secondsDone} giây`;
+
+     const existingAttempts = db.quizAttempts?.filter(a => a.studentId === currentUser.linkedStudentId && a.quizId === quiz.id) || [];
+     const newAttempt = {
+        id: `att${Date.now()}`,
+        studentId: currentUser.linkedStudentId,
+        quizId: quiz.id,
+        score: calculatedScore,
+        attemptNum: existingAttempts.length + 1,
+        date: new Date().toLocaleString('vi-VN'),
+        duration: durationText // Lưu thời gian làm bài thực tế
+     };
+
+     const updatedStudents = db.studentsList.map(s =>
+        s.id === currentUser.linkedStudentId ? { ...s, done: (s.done || 0) + 1 } : s
+     );
+     
+     setDb({ 
+        ...db, 
+        studentsList: updatedStudents,
+        quizAttempts: [...(db.quizAttempts || []), newAttempt]
+     });
+     
+     showToast('Nộp bài thành công!');
+     setIsFinished(true); 
+  };
      
      const calculatedScore = ((earned / total) * 10).toFixed(2);
      setFinalScore(calculatedScore);
@@ -1773,12 +1808,15 @@ function ResultManagement({ db }) {
                                         {attemptColumns.map((num, i) => {
                                            const attempt = row.attempts[i];
                                            return (
-                                              <td key={num} className="p-3 text-center min-w-[140px]">
+                                              <td key={num} className="p-3 text-center min-w-[150px]">
                                                  {attempt ? (
                                                     <div className="bg-blue-50/60 p-1.5 rounded border border-blue-100 shadow-2xs">
                                                        <span className="font-bold text-blue-700 text-base">{attempt.score}đ</span>
-                                                       <div className="text-[11px] text-gray-600 mt-0.5 leading-tight font-medium">
+                                                       <div className="text-[11px] text-gray-600 mt-0.5 leading-tight font-medium space-y-0.5">
                                                           <p>🕒 {attempt.date}</p>
+                                                          {attempt.duration && (
+                                                             <p className="text-indigo-600 font-semibold">⏱️ Làm: {attempt.duration}</p>
+                                                          )}
                                                        </div>
                                                     </div>
                                                  ) : (
