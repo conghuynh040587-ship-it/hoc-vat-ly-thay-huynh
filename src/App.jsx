@@ -329,13 +329,7 @@ function StudentLinkProfile({ setRoute, currentUser, setCurrentUser, db, setDb, 
 }
 
 // ==========================================
-// 7. STUDENT DASHBOARD
-// ==========================================
-// ==========================================
-// 7. STUDENT DASHBOARD (ĐÃ TỐI ƯU MOBILE)
-// ==========================================
-// ==========================================
-// 7. STUDENT DASHBOARD (CHUẨN XÁC 100%)
+// 7. STUDENT DASHBOARD (TỐI ƯU HOÀN HẢO MOBILE)
 // ==========================================
 function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
   const studentInfo = db.studentsList.find(s => s.id === currentUser.linkedStudentId);
@@ -359,30 +353,33 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
+      {/* HEADER: Thu nhỏ chữ vừa vặn màn hình di động */}
       <header className="bg-blue-700 text-white shadow-md">
-        <div className="px-3 py-2 flex justify-between items-center">
-          <h1 className="text-xs sm:text-lg md:text-xl font-bold uppercase tracking-wider truncate mr-2">
-            HỌC VẬT LÝ CÙNG THẦY LÊ CÔNG HUYNH
+        <div className="px-2.5 py-2 flex justify-between items-center gap-1">
+          <h1 className="text-[11px] sm:text-base md:text-xl font-bold uppercase tracking-tight truncate">
+            HỌC VẬT LÝ CÙNG THẦY HUYNH
           </h1>
-          <button onClick={() => setRoute('landing')} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 px-2.5 py-1 rounded text-xs sm:text-sm whitespace-nowrap">
-            <LogOut size={14}/> Đăng xuất
+          <button onClick={() => setRoute('landing')} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded text-xs whitespace-nowrap shrink-0">
+            <LogOut size={13}/> Đăng xuất
           </button>
         </div>
-        <div className="bg-blue-800 text-blue-100 text-xs sm:text-sm py-1 overflow-hidden">
+        <div className="bg-blue-800 text-blue-100 text-xs py-1 overflow-hidden">
           <marquee scrollamount="5">Vật lý không khó - Đã có thầy Huynh lo! Chúc các em học tập thật tốt và đạt kết quả cao trong các kỳ thi sắp tới.</marquee>
         </div>
       </header>
 
-      <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 flex flex-row justify-between items-center text-xs sm:text-sm">
-        <div className="font-semibold text-blue-900 flex items-center gap-1.5 truncate">
-          <User size={16} className="text-blue-700 shrink-0"/> 
+      {/* THÔNG TIN HỌC SINH: Thêm khoảng cách (gap) để không bị dính chữ */}
+      <div className="bg-blue-50 border-b border-blue-100 px-3 py-2 flex flex-row justify-between items-center text-xs sm:text-sm gap-2">
+        <div className="font-semibold text-blue-900 flex items-center gap-1 truncate">
+          <User size={15} className="text-blue-700 shrink-0"/> 
           <span className="truncate">{studentInfo?.name}</span>
         </div>
-        <div className="text-blue-800 shrink-0 font-medium">
+        <div className="text-blue-800 shrink-0 font-medium text-[11px] sm:text-sm">
           Lớp: <span className="font-bold">{classInfo?.name}</span> | Đã làm: <span className="font-bold text-green-700">{studentInfo?.done}/{studentInfo?.total}</span>
         </div>
       </div>
 
+      {/* NÚT BẬT/TẮT MỤC LỤC TRÊN ĐIỆN THOẠI */}
       <div className="md:hidden bg-gray-100 p-2 border-b flex justify-between items-center">
         <button 
           onClick={() => setShowMobileMenu(!showMobileMenu)} 
@@ -443,7 +440,7 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
             </div>
           ) : (
             <>
-              <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-4 truncate w-full">
+              <h2 className="text-base sm:text-2xl font-bold text-gray-800 mb-4 truncate w-full">
                 {db.lessons.find(l=>l.id===selectedLesson)?.name}
               </h2>
               
