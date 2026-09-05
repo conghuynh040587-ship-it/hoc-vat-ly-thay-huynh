@@ -917,7 +917,7 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
                            {(q.tfStatements || []).map((stmt, sIdx) => (
                               <div key={sIdx} className="p-4 border rounded bg-gray-50 flex flex-col md:flex-row gap-4 justify-between md:items-center">
                                  <div className="font-medium text-gray-800 flex-1">
-                                    <span className="font-bold mr-2">{['a', 'b', 'c', 'd'][sIdx]}.</span> {stmt.text}
+                                    <span className="font-bold mr-2">{['a', 'b', 'c', 'd'][sIdx]}.</span> {renderMathContent(stmt.text)}
                                  </div>
                                  <div className="flex gap-4 min-w-[140px]">
                                     <label className={`flex items-center gap-2 cursor-pointer px-3 py-1 rounded border ${answers[q.id]?.[sIdx] === true ? 'bg-green-100 border-green-500' : 'bg-white'}`}>
