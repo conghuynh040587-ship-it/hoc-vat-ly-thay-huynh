@@ -8,7 +8,29 @@ import {
 import * as XLSX from 'xlsx';
 import { db as firestore } from './firebase';
 import { doc, getDoc, setDoc } from "firebase/firestore";
-
+// Hàm hỗ trợ hiển thị công thức MathType / LaTeX
+function renderMathContent(text) {
+  if (!text) return '';
+  try {
+    let processed = String(text).replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
+      try {
+        return katex.renderToString(formula, { displayMode: true, throwOnError: false });
+      } catch (e) {
+        return match;
+      }
+    });
+    processed = processed.replace(/\$([\s\S]*?)\$/g, (match, formula) => {
+      try {
+        return katex.renderToString(formula, { displayMode: false, throwOnError: false });
+      } catch (e) {
+        return match;
+      }
+    });
+    return <span dangerouslySetInnerHTML={{ __html: processed }} />;
+  } catch (err) {
+    return text;
+  }
+}
 // ==========================================
 // 1. MOCK DATABASE & STATE MANAGEMENT
 // ==========================================
