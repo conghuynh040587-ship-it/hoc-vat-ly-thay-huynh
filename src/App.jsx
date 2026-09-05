@@ -700,10 +700,7 @@ function StudentDashboard({ currentUser, db, setDb, showToast, onLogout }) {
   );
 }
 // ==========================================
-// ==========================================
-// ==========================================
-// ==========================================
-// 7b. Quiz Player Sub-component (Đã giữ nguyên vẹn 100% giao diện gốc & tích hợp KaTeX)
+// 7b. Quiz Player Sub-component
 // ==========================================
 function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
   const [timeLeft, setTimeLeft] = useState((quiz.quizConfig?.time || 45) * 60);
@@ -760,7 +757,6 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
      const calculatedScore = ((earned / total) * 10).toFixed(2);
      setFinalScore(calculatedScore);
 
-     // --- TÍNH THỜI GIAN THỰC TẾ HỌC SINH LÀM BÀI ---
      const totalTimeAllowed = (quiz.quizConfig?.time || 45) * 60;
      const secondsSpent = totalTimeAllowed - timeLeft;
      const minutesDone = Math.floor(secondsSpent / 60);
@@ -840,7 +836,6 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* HEADER 2 DÒNG TỐI ƯU KHÔNG GIAN */}
       <div className="bg-white border-b px-4 py-3 space-y-2 sticky top-0 z-20 shadow-sm">
         <div className="flex justify-between items-center">
           <h1 className="text-sm font-bold text-gray-800 truncate flex-1 pr-2">{quiz.name}</h1>
