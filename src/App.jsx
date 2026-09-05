@@ -1206,196 +1206,281 @@ function DataManagement({ db, setDb, showToast }) {
   );
 }
 
-// --- 8c. Quiz Editor Sub-component ---
+// ==========================================
+// 8c. QUIZ EDITOR (THIẾT KẾ MỚI: NỀN TRẮNG, TÁCH BIỆT RÕ RÀNG)
+// ==========================================
 function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
   const quiz = db.materials.find(m => m.id === quizId);
   const [questions, setQuestions] = useState(quiz.questions || []);
   const [answerLink, setAnswerLink] = useState(quiz.quizConfig?.answerLink || '');
 
-  const handleAddQuestion = () => {
-    setQuestions([...questions, {
-      id: `q${Date.now()}`,
-      type: quiz.quizConfig?.type === '3part' ? 'multi' : 'multi', 
+  const handleSave = () => {
+    const updatedMaterials = db.materials.map(m => {
+      if (m.id === quizId) {
+        return {
+          ...m,
+          questions: questions,
+          quizConfig: { ...m.quizConfig, answerLink }
+        };
+      }
+      return m;
+    });
+    setDb({ ...db, materials: updatedMaterials });
+    showToast('Đã lưu đề thi thành công!', 'success');
+    onClose();
+  };
+
+  const addQuestion = (type) => {
+    const newQ = {
+      id: Date.now().toString(),
+      type: type, // 'multi', 'truefalse', 'short', 'number'
       content: '',
-      imageLink: '',
+      image: '',
       answerMCQ: 'A',
       tfStatements: [
-        { id: 'a', text: '', isTrue: true },
-        { id: 'b', text: '', isTrue: true },
-        { id: 'c', text: '', isTrue: true },
-        { id: 'd', text: '', isTrue: true }
+        { text: '', isTrue: true },
+        { text: '', isTrue: false },
+        { text: '', isTrue: true },
+        { text: '', isTrue: false },
       ],
       answerShort: '',
-      answerNumDot: '',
-      answerNumComma: ''
-    }]);
+      answerNumMin: '',
+      answerNumMax: '',
+      answerNumDot: ''
+    };
+    setQuestions([...questions, newQ]);
   };
 
-  const updateQuestion = (id, field, value) => {
-    setQuestions(questions.map(q => q.id === id ? { ...q, [field]: value } : q));
+  const updateQuestion = (index, field, value) => {
+    const updated = [...questions];
+    updated[index][field] = value;
+    setQuestions(updated);
   };
 
-  const updateTFStatement = (qId, statementIndex, field, value) => {
-    setQuestions(questions.map(q => {
-      if (q.id === qId) {
-        const newTf = q.tfStatements ? [...q.tfStatements] : [
-          { id: 'a', text: '', isTrue: true },
-          { id: 'b', text: '', isTrue: true },
-          { id: 'c', text: '', isTrue: true },
-          { id: 'd', text: '', isTrue: true }
-        ];
-        newTf[statementIndex] = { ...newTf[statementIndex], [field]: value };
-        return { ...q, tfStatements: newTf };
-      }
-      return q;
-    }));
+  const updateTfStatement = (qIndex, stmtIndex, field, value) => {
+    const updated = [...questions];
+    updated[qIndex].tfStatements[stmtIndex][field] = value;
+    setQuestions(updated);
   };
 
-  const removeQuestion = (id) => {
-    setQuestions(questions.filter(q => q.id !== id));
-  };
-
-  const handleSave = () => {
-    setDb({...db, materials: db.materials.map(m => m.id === quizId ? {...m, questions, quizConfig: {...m.quizConfig, answerLink}} : m)});
-    showToast('Lưu danh sách câu hỏi thành công!');
-    onClose();
+  const removeQuestion = (index) => {
+    if (confirm('Thầy có chắc chắn muốn xóa câu hỏi này không?')) {
+      const updated = questions.filter((_, i) => i !== index);
+      setQuestions(updated);
+    }
   };
 
   return (
     <div className="h-full flex flex-col bg-gray-50 relative">
-      <div className="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm">
-         <div className="flex items-center gap-4">
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><ArrowLeft size={20}/></button>
-            <div>
-               <h2 className="text-lg font-bold text-gray-800">Soạn câu hỏi: {quiz.name}</h2>
-               <div className="text-sm text-gray-500 flex gap-4 items-center">
-                 <span>Loại: {quiz.quizConfig?.type === 'multi' ? 'Trắc nghiệm nhiều lựa chọn' : 'Cấu trúc 2025 (3 phần)'}</span>
-                 <span>| Thời gian: {quiz.quizConfig?.time} phút</span>
-                 <span>| Lần làm: {quiz.quizConfig?.attempts}</span>
-               </div>
-            </div>
-         </div>
-         <button onClick={handleSave} className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700 font-medium">
-            <Save size={18}/> Lưu bộ câu hỏi
-         </button>
+      {/* HEADER */}
+      <div className="bg-white border-b px-4 sm:px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
+        <div className="flex items-center gap-3">
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800 p-1 rounded hover:bg-gray-100">
+            <ArrowLeft size={22}/>
+          </button>
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-gray-800">Soạn câu hỏi: {quiz.name}</h2>
+            <p className="text-xs text-gray-500">Tổng số câu hỏi: <span className="font-bold text-blue-600">{questions.length}</span></p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium text-sm shadow flex items-center gap-1.5">
+            <Save size={16}/> Lưu thay đổi
+          </button>
+        </div>
       </div>
 
-      <div className="bg-blue-50 px-6 py-3 border-b flex items-center gap-4">
-         <label className="text-sm font-semibold text-blue-800 whitespace-nowrap">Link file đáp án:</label>
-         <input type="url" placeholder="https://... (Link Google Drive, PDF, trang web giải chi tiết)" className="flex-1 p-2 border rounded text-sm outline-none focus:ring-1 focus:ring-blue-400" value={answerLink} onChange={(e) => setAnswerLink(e.target.value)} />
-      </div>
+      {/* DANH SÁCH CÂU HỎI */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-6">
+        
+        {/* LINK ĐÁP ÁN CHUNG */}
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <label className="block text-sm font-bold text-gray-700 mb-1">Link xem đáp án chi tiết / Video chữa (Google Drive / YouTube)</label>
+          <input 
+            type="text" 
+            value={answerLink} 
+            onChange={(e) => setAnswerLink(e.target.value)} 
+            placeholder="Dán link giải chi tiết vào đây..." 
+            className="w-full p-2.5 rounded bg-white text-gray-800 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          />
+        </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
-         {questions.length === 0 && (
-           <div className="text-center py-10 text-gray-400">
-              <FileQuestion size={48} className="mx-auto mb-3 opacity-50" />
-              <p>Chưa có câu hỏi nào. Hãy bấm "Thêm câu hỏi" để bắt đầu.</p>
-           </div>
-         )}
+        {questions.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300 p-8">
+            <p className="text-gray-500 mb-4 text-sm">Chưa có câu hỏi nào trong đề này.</p>
+            <p className="text-xs text-gray-400">Thầy hãy chọn thêm câu hỏi mới ở thanh bên dưới nhé.</p>
+          </div>
+        ) : (
+          questions.map((q, qIndex) => (
+            <div key={q.id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-5 relative transition-all">
+              
+              {/* STT VÀ NÚT XÓA CÂU HỎI */}
+              <div className="flex justify-between items-center border-b pb-3 mb-4">
+                <span className="font-bold text-blue-700 text-base">Câu {qIndex + 1}</span>
+                <div className="flex items-center gap-3">
+                  <select 
+                    value={q.type} 
+                    onChange={(e) => updateQuestion(qIndex, 'type', e.target.value)}
+                    className="text-xs sm:text-sm font-medium bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-700 focus:outline-none"
+                  >
+                    <option value="multi">Trắc nghiệm nhiều lựa chọn</option>
+                    <option value="truefalse">Trắc nghiệm Đúng / Sai</option>
+                    <option value="short">Trả lời ngắn</option>
+                    <option value="number">Điền số / Đáp án số</option>
+                  </select>
+                  <button onClick={() => removeQuestion(qIndex)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50" title="Xóa câu hỏi">
+                    <Trash2 size={18}/>
+                  </button>
+                </div>
+              </div>
 
-         {questions.map((q, index) => (
-            <div key={q.id} className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 relative">
-               <button onClick={() => removeQuestion(q.id)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500" title="Xóa câu hỏi"><Trash2 size={18}/></button>
-               <h4 className="font-bold text-blue-800 mb-4">Câu {index + 1}</h4>
+              {/* Ô NHẬP PHẦN ĐỀ (NỀN TRẮNG) */}
+              <div className="mb-4">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Phần đề bài</label>
+                <textarea 
+                  rows={3}
+                  value={q.content}
+                  onChange={(e) => updateQuestion(qIndex, 'content', e.target.value)}
+                  placeholder="Nhập nội dung câu hỏi vật lý..."
+                  className="w-full p-3 rounded-md bg-white text-gray-800 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm leading-relaxed"
+                />
+              </div>
 
-               {quiz.quizConfig?.type === '3part' && (
-                 <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">Loại câu hỏi (Cấu trúc 2025)</label>
-                    <select className="w-full md:w-1/2 p-2 border rounded text-sm bg-gray-50" value={q.type} onChange={(e) => updateQuestion(q.id, 'type', e.target.value)}>
-                       <option value="multi">Phần I: Trắc nghiệm nhiều lựa chọn</option>
-                       <option value="truefalse">Phần II: Trắc nghiệm Đúng/Sai</option>
-                       <option value="short">Phần III: Trả lời ngắn</option>
-                       <option value="number">Phần III: Điền đáp án (Số)</option>
-                    </select>
-                 </div>
-               )}
+              {/* Ô NHẬP LINK HÌNH ẢNH (NỀN TRẮNG) */}
+              <div className="mb-4">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Link hình ảnh minh họa (Google Drive)</label>
+                <input 
+                  type="text"
+                  value={q.image || ''}
+                  onChange={(e) => updateQuestion(qIndex, 'image', e.target.value)}
+                  placeholder="https://drive.google.com/..."
+                  className="w-full p-2.5 rounded-md bg-white text-gray-800 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
 
-               <div className="space-y-4">
-                  <div>
-                     <label className="block text-sm font-medium mb-1">Phần đề</label>
-                     <textarea className="w-full p-3 border rounded text-sm min-h-[80px]" placeholder="Nhập nội dung câu hỏi..." value={q.content} onChange={(e) => updateQuestion(q.id, 'content', e.target.value)}></textarea>
+              {/* PHẦN ĐÁP ÁN (TÁCH BIỆT RÕ RÀNG THEO TỪNG LOẠI) */}
+              <div className="mt-4 pt-3 border-t border-dashed border-gray-200">
+                
+                {/* 1. TRẮC NGHIỆM NHIỀU LỰA CHỌN (TÁCH BIỆT PHẦN CHỌN ĐÁP ÁN) */}
+                {q.type === 'multi' && (
+                  <div className="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                    <span className="block text-xs font-bold text-blue-900 uppercase tracking-wider mb-2">Phần chọn đáp án đúng</span>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-medium text-gray-700">Chọn đáp án đúng nhất:</span>
+                      <div className="flex gap-3">
+                        {['A', 'B', 'C', 'D'].map(opt => (
+                          <label key={opt} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border cursor-pointer font-bold text-sm transition-colors ${q.answerMCQ === opt ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>
+                            <input 
+                              type="radio" 
+                              name={`mcq-${q.id}`} 
+                              checked={q.answerMCQ === opt} 
+                              onChange={() => updateQuestion(qIndex, 'answerMCQ', opt)}
+                              className="hidden"
+                            />
+                            {opt}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                     <label className="block text-sm font-medium mb-1">Link hình ảnh (Google Drive)</label>
-                     <input type="url" className="w-full p-2 border rounded text-sm" placeholder="https://drive.google.com/..." value={q.imageLink} onChange={(e) => updateQuestion(q.id, 'imageLink', e.target.value)}/>
+                )}
+
+                {/* 2. ĐÚNG / SAI */}
+                {q.type === 'truefalse' && (
+                  <div className="space-y-3">
+                    <span className="block text-xs font-bold text-gray-600 uppercase tracking-wider">Phần đáp án các ý a, b, c, d</span>
+                    {q.tfStatements?.map((stmt, sIdx) => (
+                      <div key={sIdx} className="bg-gray-50 p-3 rounded-md border border-gray-200 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                        <span className="font-bold text-blue-700 w-6 text-sm">
+                          {['a', 'b', 'c', 'd'][sIdx]}.
+                        </span>
+                        <textarea 
+                          rows={2}
+                          value={stmt.text}
+                          onChange={(e) => updateTfStatement(qIndex, sIdx, 'text', e.target.value)}
+                          placeholder={`Nhập nội dung ý ${['a', 'b', 'c', 'd'][sIdx]}...`}
+                          className="flex-1 w-full p-2.5 rounded bg-white text-gray-800 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        />
+                        <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                          <label className={`flex items-center gap-1 px-3 py-1.5 rounded border text-xs font-bold cursor-pointer ${stmt.isTrue ? 'bg-green-600 text-white border-green-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300'}`}>
+                            <input 
+                              type="radio" 
+                              name={`tf-${q.id}-${sIdx}`} 
+                              checked={stmt.isTrue} 
+                              onChange={() => updateTfStatement(qIndex, sIdx, 'isTrue', true)}
+                              className="hidden"
+                            />
+                            Đúng
+                          </label>
+                          <label className={`flex items-center gap-1 px-3 py-1.5 rounded border text-xs font-bold cursor-pointer ${!stmt.isTrue ? 'bg-red-600 text-white border-red-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300'}`}>
+                            <input 
+                              type="radio" 
+                              name={`tf-${q.id}-${sIdx}`} 
+                              checked={!stmt.isTrue} 
+                              onChange={() => updateTfStatement(qIndex, sIdx, 'isTrue', false)}
+                              className="hidden"
+                            />
+                            Sai
+                          </label>
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                )}
 
-                  <div className="pt-4 border-t border-dashed">
-                     <label className="block text-sm font-bold text-gray-700 mb-3">Phần đáp án</label>
-
-                     {(q.type === 'multi' || quiz.quizConfig?.type === 'multi') && (
-                        <div className="flex items-center gap-4">
-                           <span className="text-sm text-gray-600">Chọn đáp án đúng:</span>
-                           {['A', 'B', 'C', 'D'].map(opt => (
-                              <label key={opt} className="flex items-center gap-1 cursor-pointer bg-gray-50 px-3 py-1 border rounded hover:bg-gray-100">
-                                 <input type="radio" name={`ans_${q.id}`} value={opt} checked={q.answerMCQ === opt} onChange={(e) => updateQuestion(q.id, 'answerMCQ', e.target.value)} />
-                                 <span className="font-bold text-blue-700">{opt}</span>
-                              </label>
-                           ))}
-                        </div>
-                     )}
-
-                     {q.type === 'truefalse' && quiz.quizConfig?.type === '3part' && (
-                        <div className="space-y-3">
-                           <p className="text-xs text-gray-500 mb-2">Nhập 4 ý a, b, c, d và chọn Đúng hoặc Sai cho mỗi ý.</p>
-                           {(q.tfStatements || [
-                              { id: 'a', text: '', isTrue: true },
-                              { id: 'b', text: '', isTrue: true },
-                              { id: 'c', text: '', isTrue: true },
-                              { id: 'd', text: '', isTrue: true }
-                           ]).map((stmt, sIdx) => (
-                              <div key={sIdx} className="flex items-start gap-3 bg-gray-50 p-3 rounded border">
-                                 <span className="font-bold text-blue-700 mt-2">{['a', 'b', 'c', 'd'][sIdx]}.</span>
-                                 <textarea className="flex-1 p-2 border rounded text-sm min-h-[40px]" placeholder={`Nội dung ý ${['a', 'b', 'c', 'd'][sIdx]}...`} value={stmt.text} onChange={(e) => updateTFStatement(q.id, sIdx, 'text', e.target.value)}></textarea>
-                                 <div className="flex flex-col gap-2 min-w-[100px]">
-                                    <label className="flex items-center gap-1 cursor-pointer">
-                                       <input type="radio" name={`tf_${q.id}_${sIdx}`} checked={stmt.isTrue === true} onChange={() => updateTFStatement(q.id, sIdx, 'isTrue', true)} />
-                                       <span className="text-sm text-green-700 font-medium">Đúng</span>
-                                    </label>
-                                    <label className="flex items-center gap-1 cursor-pointer">
-                                       <input type="radio" name={`tf_${q.id}_${sIdx}`} checked={stmt.isTrue === false} onChange={() => updateTFStatement(q.id, sIdx, 'isTrue', false)} />
-                                       <span className="text-sm text-red-700 font-medium">Sai</span>
-                                    </label>
-                                 </div>
-                              </div>
-                           ))}
-                        </div>
-                     )}
-
-                     {q.type === 'short' && quiz.quizConfig?.type === '3part' && (
-                        <div>
-                           <p className="text-xs text-gray-500 mb-1">Học sinh sẽ nhập câu trả lời ngắn (hệ thống bắt đầu bằng "Câu X: ")</p>
-                           <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-700 whitespace-nowrap">Câu {index + 1}:</span>
-                              <input type="text" className="w-full p-2 border rounded text-sm" placeholder="Nhập đáp án..." value={q.answerShort} onChange={(e) => updateQuestion(q.id, 'answerShort', e.target.value)}/>
-                           </div>
-                        </div>
-                     )}
-
-                     {q.type === 'number' && quiz.quizConfig?.type === '3part' && (
-                        <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
-                           <p className="text-sm font-medium text-blue-800 mb-2">Điền đáp án số (Định dạng thập phân)</p>
-                           <p className="text-xs text-gray-600 mb-3">* Nếu đáp án là số nguyên, chỉ cần nhập vào ô "Dấu chấm".</p>
-                           <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                 <label className="block text-xs font-medium mb-1">Định dạng dấu chấm (.)</label>
-                                 <input type="text" className="w-full p-2 border rounded text-sm" placeholder="VD: 3.14" value={q.answerNumDot} onChange={(e) => updateQuestion(q.id, 'answerNumDot', e.target.value)}/>
-                              </div>
-                              <div>
-                                 <label className="block text-xs font-medium mb-1">Định dạng dấu phẩy (,)</label>
-                                 <input type="text" className="w-full p-2 border rounded text-sm" placeholder="VD: 3,14" value={q.answerNumComma} onChange={(e) => updateQuestion(q.id, 'answerNumComma', e.target.value)}/>
-                              </div>
-                           </div>
-                        </div>
-                     )}
+                {/* 3. TRẢ LỜI NGẮN */}
+                {q.type === 'short' && (
+                  <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
+                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Đáp án trả lời ngắn chính xác</label>
+                    <input 
+                      type="text" 
+                      value={q.answerShort || ''}
+                      onChange={(e) => updateQuestion(qIndex, 'answerShort', e.target.value)}
+                      placeholder="Nhập đáp án (ví dụ: 2,5 hoặc gia tốc)..."
+                      className="w-full sm:w-1/2 p-2.5 rounded bg-white text-gray-800 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                    />
                   </div>
-               </div>
+                )}
+
+                {/* 4. ĐIỀN SỐ / ĐÁP ÁN SỐ */}
+                {q.type === 'number' && (
+                  <div className="bg-gray-50 p-3 rounded-md border border-gray-200 space-y-2">
+                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider">Đáp án số (Dạng điền kết quả)</label>
+                    <input 
+                      type="text" 
+                      value={q.answerNumDot || ''}
+                      onChange={(e) => updateQuestion(qIndex, 'answerNumDot', e.target.value)}
+                      placeholder="Nhập số kết quả (ví dụ: 15.5)..."
+                      className="w-full sm:w-1/2 p-2.5 rounded bg-white text-gray-800 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+                )}
+
+              </div>
+
             </div>
-         ))}
+          ))
+        )}
 
-         <button onClick={handleAddQuestion} className="w-full py-4 border-2 border-dashed border-gray-300 text-gray-500 font-medium rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors flex justify-center items-center gap-2">
-            <Plus size={20}/> Thêm câu hỏi
-         </button>
+        {/* NÚT THÊM CÂU HỎI MỚI */}
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm text-center space-y-2">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Thêm câu hỏi mới vào đề</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <button onClick={() => addQuestion('multi')} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-medium shadow-sm">
+              + Trắc nghiệm nhiều lựa chọn
+            </button>
+            <button onClick={() => addQuestion('truefalse')} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded text-xs font-medium shadow-sm">
+              + Trắc nghiệm Đúng / Sai
+            </button>
+            <button onClick={() => addQuestion('green') || addQuestion('short')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded text-xs font-medium shadow-sm">
+              + Trả lời ngắn
+            </button>
+            <button onClick={() => addQuestion('number')} className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded text-xs font-medium shadow-sm">
+              + Điền số
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   );
