@@ -872,7 +872,7 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
                quiz.questions.map((q, index) => (
                   <div key={q.id} className="mb-6 p-6 bg-white rounded-lg shadow-sm border border-gray-200">
                      <h4 className="font-bold text-lg mb-4 text-blue-900 border-b pb-2">Câu {index + 1}:</h4>
-                     <div className="mb-4 text-gray-800 whitespace-pre-wrap">{q.content}</div>
+                     <div className="mb-4 text-gray-800 whitespace-pre-wrap">{renderMathContent(q.content)}</div>
                      {q.imageLink && (
                         <a href={q.imageLink} target="_blank" rel="noreferrer" className="text-blue-500 underline mb-4 inline-block font-medium">
                             Click để xem hình ảnh đính kèm
