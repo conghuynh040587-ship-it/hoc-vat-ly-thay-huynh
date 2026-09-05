@@ -329,7 +329,7 @@ function StudentLinkProfile({ setRoute, currentUser, setCurrentUser, db, setDb, 
 }
 
 // ==========================================
-// 7. STUDENT DASHBOARD (TỐI ƯU GỌN GÀNG MOBILE)
+// 7. STUDENT DASHBOARD (HOÀN HẢO CÂN ĐỐI MOBILE)
 // ==========================================
 function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
   const studentInfo = db.studentsList.find(s => s.id === currentUser.linkedStudentId);
@@ -353,26 +353,26 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* HEADER: Tiêu đề dòng trên, nút Đăng xuất xuống dòng dưới cho rộng rãi */}
+      {/* HEADER: Thêm khoảng cách mt-2 cho nút đăng xuất để không bị dính chữ */}
       <header className="bg-blue-700 text-white shadow-md">
-        <div className="px-3 py-2 flex flex-col gap-2">
+        <div className="px-3 py-2.5 flex flex-col gap-1">
           <div className="flex justify-between items-center">
-            <h1 className="text-xs sm:text-lg md:text-xl font-bold uppercase tracking-wide leading-tight">
+            <h1 className="text-xs sm:text-lg md:text-xl font-bold uppercase tracking-wide leading-snug text-center w-full">
               HỌC VẬT LÝ CÙNG THẦY LÊ CÔNG HUYNH
             </h1>
           </div>
-          <div className="flex justify-end">
-            <button onClick={() => setRoute('landing')} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-xs whitespace-nowrap shadow-sm">
+          <div className="flex justify-end mt-1">
+            <button onClick={() => setRoute('landing')} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded text-xs whitespace-nowrap shadow-sm font-medium">
               <LogOut size={13}/> Đăng xuất
             </button>
           </div>
         </div>
-        <div className="bg-blue-800 text-blue-100 text-xs py-1 overflow-hidden">
+        <div className="bg-blue-800 text-blue-100 text-xs py-1 overflow-hidden border-t border-blue-600">
           <marquee scrollamount="5">Vật lý không khó - Đã có thầy Huynh lo! Chúc các em học tập thật tốt và đạt kết quả cao trong các kỳ thi sắp tới.</marquee>
         </div>
       </header>
 
-      {/* THÔNG TIN HỌC SINH: Chỉ hiện tên và lớp, đã xóa phần "Đã làm" */}
+      {/* THÔNG TIN HỌC SINH: Gọn gàng chỉ có tên và lớp */}
       <div className="bg-blue-50 border-b border-blue-100 px-3 py-2 flex justify-between items-center text-xs sm:text-sm">
         <div className="font-semibold text-blue-900 flex items-center gap-1.5 truncate">
           <User size={15} className="text-blue-700 shrink-0"/> 
