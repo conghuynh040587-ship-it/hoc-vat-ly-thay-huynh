@@ -8,8 +8,7 @@ import {
 import * as XLSX from 'xlsx';
 import { db as firestore } from './firebase';
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import 'katex/dist/katex.min.css';
-import katex from 'katex';
+
 // ==========================================
 // 1. MOCK DATABASE & STATE MANAGEMENT
 // ==========================================
