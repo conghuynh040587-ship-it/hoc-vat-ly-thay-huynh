@@ -484,7 +484,9 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
     </div>
   );
 }
-// --- 7b. Quiz Player Sub-component ---
+// ==========================================
+// 7b. Quiz Player Sub-component (Đã tối ưu giao diện & hiển thị đáp án)
+// ==========================================
 function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
   const [timeLeft, setTimeLeft] = useState((quiz.quizConfig?.time || 45) * 60);
   const [answers, setAnswers] = useState({});
@@ -500,7 +502,7 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
           handleAutoSubmit();
           return 0;
         }
-        if (prev === 300) { 
+        if (prev === 300) {  
           showToast('Cảnh báo: Bạn còn 5 phút để làm bài!', 'error');
         }
         return prev - 1;
@@ -612,20 +614,29 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      <header className="bg-white shadow-md p-4 sticky top-0 z-10 flex justify-between items-center">
-         <div>
-            <h2 className="text-xl font-bold text-gray-800">{quiz.name}</h2>
-            <p className="text-sm text-gray-500">Học sinh: {currentUser.name}</p>
-         </div>
-         <div className="flex items-center gap-6">
-            <div className={`font-bold text-xl flex items-center gap-2 ${timeLeft <= 300 ? 'text-red-600 animate-pulse' : 'text-blue-700'}`}>
-               <Clock size={24}/> {formatTime(timeLeft)}
-            </div>
-            <button onClick={() => setShowConfirmModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow">
-               Nộp bài
-            </button>
-         </div>
-      </header>
+      {/* HEADER 2 DÒNG TỐI ƯU KHÔNG GIAN */}
+      <div className="bg-white border-b px-4 py-3 space-y-2 sticky top-0 z-20 shadow-sm">
+        {/* Dòng 1: Tên đề thi và tên học sinh */}
+        <div className="flex justify-between items-center">
+          <h1 className="text-sm font-bold text-gray-800 truncate flex-1 pr-2">{quiz.name}</h1>
+          <span className="text-xs text-gray-500 shrink-0">HS: <strong className="text-gray-700">{currentUser?.name || 'Học sinh'}</strong></span>
+        </div>
+
+        {/* Dòng 2: Thời gian đếm ngược và nút Nộp bài */}
+        <div className="flex justify-between items-center pt-1 border-t border-gray-100">
+          <div className={`flex items-center gap-1.5 font-bold text-xs px-2.5 py-1 rounded border ${timeLeft <= 300 ? 'bg-red-50 border-red-200 text-red-600 animate-pulse' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
+            <Clock size={14}/>
+            <span>Thời gian: {formatTime(timeLeft)}</span>
+          </div>
+          
+          <button 
+            onClick={() => setShowConfirmModal(true)} 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded font-medium text-xs shadow-sm transition-colors"
+          >
+            Nộp bài
+          </button>
+        </div>
+      </div>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-8">
          <div className="max-w-4xl mx-auto">
@@ -640,18 +651,39 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
                      <div className="mb-4 text-gray-800 whitespace-pre-wrap">{q.content}</div>
                      {q.imageLink && (
                         <a href={q.imageLink} target="_blank" rel="noreferrer" className="text-blue-500 underline mb-4 inline-block font-medium">
-                           Click để xem hình ảnh đính kèm
+                            Click để xem hình ảnh đính kèm
                         </a>
                      )}
 
+                     {/* HIỂN THỊ ĐÁP ÁN TRẮC NGHIỆM LẤY ĐÚNG NỘI DUNG ĐÃ SOẠN */}
                      {(q.type === 'multi' || !q.type) && (
                         <div className="space-y-3 mt-4">
-                           {['A', 'B', 'C', 'D'].map(opt => (
-                              <label key={opt} className={`flex items-center gap-3 p-3 border rounded cursor-pointer transition-colors ${answers[q.id] === opt ? 'bg-blue-50 border-blue-400' : 'hover:bg-gray-50'}`}>
-                                 <input type="radio" name={`ans_${q.id}`} value={opt} checked={answers[q.id] === opt} onChange={() => handleAnswerChange(q.id, opt)} className="w-5 h-5 text-blue-600"/>
-                                 <span className="font-semibold text-gray-700">Đáp án {opt}</span>
-                              </label>
-                           ))}
+                           {['A', 'B', 'C', 'D'].map((opt, optIdx) => {
+                              const optionText = q.options && q.options[optIdx] ? q.options[optIdx] : `Đáp án ${opt}`;
+                              const isSelected = answers[q.id] === opt;
+                              return (
+                                 <label 
+                                    key={opt} 
+                                    className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
+                                       isSelected ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
+                                    }`}
+                                 >
+                                    <input 
+                                       type="radio" 
+                                       name={`ans_${q.id}`} 
+                                       checked={isSelected} 
+                                       onChange={() => handleAnswerChange(q.id, opt)}
+                                       className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <div className="flex-1 flex gap-2">
+                                       <span className={`font-bold ${isSelected ? 'text-blue-700' : 'text-gray-700'}`}>{opt}.</span>
+                                       <span className={`text-sm ${isSelected ? 'text-blue-900 font-medium' : 'text-gray-800'}`}>
+                                          {optionText}
+                                       </span>
+                                    </div>
+                                 </label>
+                              );
+                           })}
                         </div>
                      )}
 
@@ -680,7 +712,7 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
 
                      {(q.type === 'short' || q.type === 'number') && (
                         <div className="mt-4">
-                           <input type="text" placeholder="Nhập câu trả lời của bạn..." className="w-full p-4 border rounded font-medium focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50" value={answers[q.id] || ''} onChange={(e) => handleAnswerChange(q.id, e.target.value)} />
+                           <input type="text" placeholder="Nhập câu trả lời của bạn..." className="w-full p-4 border rounded font-medium focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-800" value={answers[q.id] || ''} onChange={(e) => handleAnswerChange(q.id, e.target.value)} />
                         </div>
                      )}
                   </div>
