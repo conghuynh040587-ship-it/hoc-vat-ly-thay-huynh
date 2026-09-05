@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  User, Lock, Phone, Mail, BookOpen, Users, Database, 
-  ChevronRight, ChevronDown, Plus, Trash2, Edit, FileText, 
+import {
+  User, Lock, Phone, Mail, BookOpen, Users, Database,
+  ChevronRight, ChevronDown, Plus, Trash2, Edit, FileText,
   Video, FileQuestion, LogOut, CheckCircle, AlertCircle, Clock,
   ArrowLeft, Save, BarChart
 } from 'lucide-react';
