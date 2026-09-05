@@ -331,53 +331,53 @@ function StudentLinkProfile({ setRoute, currentUser, setCurrentUser, db, setDb, 
 // ==========================================
 // 7. STUDENT DASHBOARD (THU NHỎ SIZE CHỮ HEADER)
 // ==========================================
-function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
-  const studentInfo = db.studentsList.find(s => s.id === currentUser.linkedStudentId);
-  const classInfo = db.classes.find(c => c.id === studentInfo?.classId);
-  const gradeInfo = db.grades.find(g => g.id === classInfo?.gradeId);
-
-  const [expandedChapters, setExpandedChapters] = useState({});
+// 7. STUDENT DASHBOARD (GIAO DIỆN HỌC SINH TÍCH HỢP THỐNG KÊ & XẾP LOẠI)
+// ==========================================
+function StudentDashboard({ currentUser, db, setDb, showToast, onLogout }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
-  const [activeTab, setActiveTab] = useState('theory'); 
-  const [activeQuiz, setActiveQuiz] = useState(null); 
+  const [activeTab, setActiveTab] = useState('theory');
+  const [activeQuiz, setActiveQuiz] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [expandedChapters, setExpandedChapters] = useState({});
 
-  const toggleChapter = (chapId) => setExpandedChapters(prev => ({ ...prev, [chapId]: !prev[chapId] }));
+  const toggleChapter = (chapId) => {
+    setExpandedChapters(prev => ({ ...prev, [chapId]: !prev[chapId] }));
+  };
 
-  const chapters = db.chapters.filter(c => c.gradeId === gradeInfo?.id);
-  const materialsForLesson = selectedLesson ? db.materials.filter(m => m.lessonId === selectedLesson) : [];
+  const chapters = db.chapters || [];
+  const materialsForLesson = db.materials?.filter(m => m.lessonId === selectedLesson) || [];
 
   if (activeQuiz) {
-    return <QuizPlayer quiz={activeQuiz} currentUser={currentUser} db={db} setDb={setDb} showToast={showToast} onFinish={() => setActiveQuiz(null)} />;
+    return (
+      <QuizPlayer 
+        quiz={activeQuiz} 
+        currentUser={currentUser} 
+        db={db} 
+        setDb={setDb} 
+        showToast={showToast} 
+        onFinish={() => setActiveQuiz(null)} 
+      />
+    );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      {/* HEADER: Thu nhỏ size chữ tiêu đề (text-[11px] trên mobile) và bố trí gọn gàng */}
-      <header className="bg-blue-700 text-white shadow-md">
-        <div className="px-3 py-2 flex flex-col sm:flex-row justify-between items-center gap-2">
-          <h1 className="text-[8px] sm:text-base md:text-xl font-bold uppercase tracking-wide leading-tight text-center sm:text-left">
-            HỌC VẬT LÝ CÙNG THẦY LÊ CÔNG HUYNH
-          </h1>
-          <button onClick={() => setRoute('landing')} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 px-2.5 py-1 rounded text-xs whitespace-nowrap shadow-sm font-medium shrink-0">
-            <LogOut size={13}/> Đăng xuất
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      {/* HEADER HỌC SINH */}
+      <header className="bg-purple-700 text-white p-4 shadow-md flex justify-between items-center">
+        <div>
+          <h1 className="text-base sm:text-lg font-bold">HỌC VẬT LÝ CÙNG THẦY LÊ CÔNG HUYNH</h1>
+          <p className="text-xs text-purple-200">Chúc em học tập thật tốt và đạt kết quả cao trong các bài kiểm tra!</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right hidden sm:block">
+            <p className="text-sm font-semibold">{currentUser?.name}</p>
+            <p className="text-xs text-purple-200">Lớp: {currentUser?.className}</p>
+          </div>
+          <button onClick={onLogout} className="bg-purple-600 hover:bg-purple-800 text-white px-3 py-1.5 rounded text-xs sm:text-sm font-medium border border-purple-500 transition-colors flex items-center gap-1">
+            <LogOut size={16}/> Đăng xuất
           </button>
         </div>
-        <div className="bg-blue-800 text-blue-100 text-xs py-1 overflow-hidden border-t border-blue-600">
-          <marquee scrollamount="5">Vật lý không khó - Đã có thầy Huynh lo! Chúc các em học tập thật tốt và đạt kết quả cao trong các kỳ thi sắp tới.</marquee>
-        </div>
       </header>
-
-      {/* THÔNG TIN HỌC SINH: Gọn gàng chỉ có tên và lớp */}
-      <div className="bg-blue-50 border-b border-blue-100 px-3 py-2 flex justify-between items-center text-xs sm:text-sm">
-        <div className="font-semibold text-blue-900 flex items-center gap-1.5 truncate">
-          <User size={15} className="text-blue-700 shrink-0"/> 
-          <span className="truncate">{studentInfo?.name}</span>
-        </div>
-        <div className="text-blue-800 font-medium shrink-0">
-          Lớp: <span className="font-bold">{classInfo?.name}</span>
-        </div>
-      </div>
 
       {/* NÚT BẬT/TẮT MỤC LỤC TRÊN ĐIỆN THOẠI */}
       <div className="md:hidden bg-gray-100 p-2 border-b flex justify-between items-center">
@@ -390,6 +390,7 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
       </div>
 
       <div className="flex flex-1 overflow-hidden relative">
+        {/* THANH MỤC LỤC BÊN TRÁI */}
         <div className={`
           ${showMobileMenu ? 'absolute inset-0 z-20 bg-white w-full h-full' : 'hidden'} 
           md:flex md:w-1/3 bg-gray-50 border-r border-gray-200 flex-col overflow-y-auto
@@ -432,11 +433,91 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
           </div>
         </div>
 
+        {/* NỘI DUNG CHÍNH BÊN PHẢI */}
         <div className="w-full md:w-2/3 bg-white p-4 sm:p-6 overflow-y-auto flex flex-col">
           {!selectedLesson ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 py-12">
-              <BookOpen size={54} className="mb-4 opacity-50" />
-              <p className="text-center text-sm sm:text-base">Chọn một bài học ở danh sách bên trái để bắt đầu</p>
+            <div className="flex-1 flex flex-col items-center justify-center py-8 w-full max-w-xl mx-auto space-y-6">
+              
+              {/* LỜI CHÀO MỪNG */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-5 text-white shadow-md w-full text-center">
+                <h2 className="text-lg sm:text-xl font-bold mb-1">Xin chào, {currentUser?.name || 'Học sinh'}! 👋</h2>
+                <p className="text-blue-100 text-xs sm:text-sm">Chúc em có một buổi học tập môn Vật lý thật hiệu quả.</p>
+              </div>
+
+              {/* HƯỚNG DẪN CHỌN BÀI */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center w-full">
+                <p className="text-sm font-medium text-blue-900 flex items-center justify-center gap-2">
+                  <BookOpen size={18} className="text-blue-600" />
+                  <span>Hãy chọn một bài học ở danh sách bên trái để bắt đầu học và làm bài nhé!</span>
+                </p>
+              </div>
+
+              {/* BẢNG THỐNG KÊ, XẾP LOẠI VÀ KHÍCH LỆ */}
+              {(() => {
+                const studentAttempts = db.quizAttempts?.filter(a => a.studentId === currentUser?.linkedStudentId) || [];
+                const totalDone = studentAttempts.length;
+                const avgScore = totalDone > 0 
+                  ? (studentAttempts.reduce((sum, a) => sum + parseFloat(a.score || 0), 0) / totalDone).toFixed(2) 
+                  : 0;
+
+                let rankName = 'Chưa xếp loại';
+                let rankColor = 'bg-gray-100 text-gray-700 border-gray-300';
+                let encourageText = 'Em hãy chọn bài học và hoàn thành bài kiểm tra đầu tiên để ghi nhận kết quả nhé!';
+
+                if (totalDone > 0) {
+                  const scoreNum = parseFloat(avgScore);
+                  if (scoreNum >= 8.5) {
+                    rankName = '🌟 Học lực: GIỎI';
+                    rankColor = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+                    encourageText = 'Tuyệt vời! Em đang duy trì phong độ rất xuất sắc. Hãy tiếp tục phát huy nhé!';
+                  } else if (scoreNum >= 6.5) {
+                    rankName = '👍 Học lực: KHÁ';
+                    rankColor = 'bg-blue-50 text-blue-800 border-blue-200';
+                    encourageText = 'Kết quả rất tốt! Cố gắng thêm một chút nữa ở các bài tập nâng cao để đạt điểm tuyệt đối nha.';
+                  } else if (scoreNum >= 5.0) {
+                    rankName = '✍️ Học lực: ĐẠT';
+                    rankColor = 'bg-amber-50 text-amber-800 border-amber-200';
+                    encourageText = 'Em đã nắm được kiến thức cơ bản. Hãy chịu khó luyện tập thêm để nâng cao điểm số nhé!';
+                  } else {
+                    rankName = '🎯 Cần cố gắng nhiều hơn';
+                    rankColor = 'bg-rose-50 text-rose-800 border-rose-200';
+                    encourageText = 'Đừng nản chí em nhé! Hãy xem lại lý thuyết, trao đổi thêm với thầy cô và làm lại bài để tiến bộ hơn.';
+                  }
+                }
+
+                return (
+                  <div className="w-full space-y-4">
+                    {/* Thống kê nhanh */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm text-center">
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Bài đã hoàn thành</p>
+                        <p className="text-2xl font-bold text-blue-600 mt-1">{totalDone} bài</p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm text-center">
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Điểm trung bình</p>
+                        <p className="text-2xl font-bold text-indigo-600 mt-1">{avgScore} / 10</p>
+                      </div>
+                    </div>
+
+                    {/* Thông báo Xếp loại */}
+                    <div className={`p-3.5 rounded-xl border shadow-sm font-bold text-center text-sm ${rankColor}`}>
+                      {rankName}
+                    </div>
+
+                    {/* Thông báo Khích lệ */}
+                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 shadow-sm flex gap-3 items-start text-left">
+                      <div className="text-amber-600 text-xl mt-0.5">💡</div>
+                      <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-amber-800 mb-1">Lời nhắn khích lệ từ thầy</h4>
+                        <p className="text-sm text-amber-900 leading-relaxed font-medium">
+                          {encourageText}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
             </div>
           ) : (
             <>
