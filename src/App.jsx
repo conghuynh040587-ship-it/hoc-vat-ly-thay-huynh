@@ -1610,6 +1610,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
   );
 }
 // --- 8d. Result Management Sub-component ---
+// --- 8d. Result Management Sub-component ---
 function ResultManagement({ db }) {
   const [selectedQuizId, setSelectedQuizId] = useState(null);
   const [selectedClassId, setSelectedClassId] = useState('');
@@ -1655,63 +1656,63 @@ function ResultManagement({ db }) {
                          {isGradeOpen ? <ChevronDown size={16}/> : <ChevronRight size={16}/>}
                       </div>
                       
-                      {isGradeOpen && (
-                         <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 pl-2">
-                            {db.chapters.filter(c => c.gradeId === grade.id).map(chap => {
-                               const isChapOpen = expanded[chap.id];
-                               return (
-                                  <div key={chap.id}>
-                                     <div 
-                                        className="p-2 text-sm font-semibold text-gray-700 cursor-pointer flex justify-between items-center hover:bg-gray-50 rounded"
-                                        onClick={() => toggleNode(chap.id)}
-                                     >
-                                        {chap.name}
-                                        {isChapOpen ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
-                                     </div>
+                       {isGradeOpen && (
+                          <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 pl-2">
+                             {db.chapters.filter(c => c.gradeId === grade.id).map(chap => {
+                                const isChapOpen = expanded[chap.id];
+                                return (
+                                   <div key={chap.id}>
+                                      <div 
+                                         className="p-2 text-sm font-semibold text-gray-700 cursor-pointer flex justify-between items-center hover:bg-gray-50 rounded"
+                                         onClick={() => toggleNode(chap.id)}
+                                      >
+                                         {chap.name}
+                                         {isChapOpen ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+                                      </div>
 
-                                     {isChapOpen && (
-                                        <div className="ml-4 space-y-1 border-l-2 border-gray-100 pl-2">
-                                           {db.lessons.filter(l => l.chapterId === chap.id).map(les => {
-                                              const isLesOpen = expanded[les.id];
-                                              const lessonQuizzes = quizzes.filter(q => q.lessonId === les.id);
-                                              
-                                              return (
-                                                 <div key={les.id}>
-                                                    <div 
-                                                       className="p-2 text-sm text-gray-600 cursor-pointer flex justify-between items-center hover:bg-gray-50 rounded"
-                                                       onClick={() => toggleNode(les.id)}
-                                                    >
-                                                       {les.name}
-                                                       {isLesOpen ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
-                                                    </div>
+                                      {isChapOpen && (
+                                         <div className="ml-4 space-y-1 border-l-2 border-gray-100 pl-2">
+                                            {db.lessons.filter(l => l.chapterId === chap.id).map(les => {
+                                               const isLesOpen = expanded[les.id];
+                                               const lessonQuizzes = quizzes.filter(q => q.lessonId === les.id);
+                                               
+                                               return (
+                                                  <div key={les.id}>
+                                                     <div 
+                                                        className="p-2 text-sm text-gray-600 cursor-pointer flex justify-between items-center hover:bg-gray-50 rounded"
+                                                        onClick={() => toggleNode(les.id)}
+                                                     >
+                                                        {les.name}
+                                                        {isLesOpen ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+                                                     </div>
 
-                                                    {isLesOpen && (
-                                                       <div className="ml-4 space-y-1">
-                                                          {lessonQuizzes.length === 0 ? (
-                                                             <div className="p-2 text-xs text-gray-400 italic">Chưa có đề thi nào</div>
-                                                          ) : (
-                                                             lessonQuizzes.map(quiz => (
-                                                                <div 
-                                                                   key={quiz.id}
-                                                                   onClick={() => setSelectedQuizId(quiz.id)}
-                                                                   className={`p-2 text-xs rounded cursor-pointer transition-colors ${selectedQuizId === quiz.id ? 'bg-blue-100 text-blue-800 font-bold border border-blue-200' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50 border border-transparent'}`}
-                                                                >
-                                                                   • {quiz.name}
-                                                                </div>
-                                                             ))
-                                                          )}
-                                                       </div>
-                                                    )}
-                                                 </div>
-                                              )
-                                           })}
-                                        </div>
-                                     )}
-                                  </div>
-                               )
-                            })}
-                         </div>
-                      )}
+                                                     {isLesOpen && (
+                                                        <div className="ml-4 space-y-1">
+                                                           {lessonQuizzes.length === 0 ? (
+                                                              <div className="p-2 text-xs text-gray-400 italic">Chưa có đề thi nào</div>
+                                                           ) : (
+                                                              lessonQuizzes.map(quiz => (
+                                                                 <div 
+                                                                    key={quiz.id}
+                                                                    onClick={() => setSelectedQuizId(quiz.id)}
+                                                                    className={`p-2 text-xs rounded cursor-pointer transition-colors ${selectedQuizId === quiz.id ? 'bg-blue-100 text-blue-800 font-bold border border-blue-200' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50 border border-transparent'}`}
+                                                                 >
+                                                                    • {quiz.name}
+                                                                 </div>
+                                                              ))
+                                                           )}
+                                                        </div>
+                                                     )}
+                                                  </div>
+                                               )
+                                            })}
+                                         </div>
+                                      )}
+                                   </div>
+                                )
+                             })}
+                          </div>
+                       )}
                    </div>
                 )
              })}
@@ -1772,11 +1773,13 @@ function ResultManagement({ db }) {
                                         {attemptColumns.map((num, i) => {
                                            const attempt = row.attempts[i];
                                            return (
-                                              <td key={num} className="p-3 text-center min-w-[100px]">
+                                              <td key={num} className="p-3 text-center min-w-[140px]">
                                                  {attempt ? (
-                                                    <div>
-                                                       <span className="font-bold text-blue-700 text-base">{attempt.score}</span>
-                                                       <div className="text-[10px] text-gray-400 mt-0.5">{attempt.date.split(' ')[1]}</div>
+                                                    <div className="bg-blue-50/60 p-1.5 rounded border border-blue-100 shadow-2xs">
+                                                       <span className="font-bold text-blue-700 text-base">{attempt.score}đ</span>
+                                                       <div className="text-[11px] text-gray-600 mt-0.5 leading-tight font-medium">
+                                                          <p>🕒 {attempt.date}</p>
+                                                       </div>
                                                     </div>
                                                  ) : (
                                                     <span className="text-gray-300">-</span>
