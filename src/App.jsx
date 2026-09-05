@@ -366,7 +366,7 @@ function StudentDashboard({ currentUser, db, setDb, showToast, onLogout }) {
       <header className="bg-purple-700 text-white p-4 shadow-md flex justify-between items-center">
         <div>
           <h1 className="text-base sm:text-lg font-bold">HỌC VẬT LÝ CÙNG THẦY LÊ CÔNG HUYNH</h1>
-          <p className="text-xs text-purple-200">Chúc em học tập thật tốt và đạt kết quả cao trong các bài kiểm tra!</p>
+          <p className="text-xs text-purple-200">Vật lý không khó. Đã có thầy Huynh lo!</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right hidden sm:block">
@@ -444,15 +444,7 @@ function StudentDashboard({ currentUser, db, setDb, showToast, onLogout }) {
                 <p className="text-blue-100 text-xs sm:text-sm">Chúc em có một buổi học tập môn Vật lý thật hiệu quả.</p>
               </div>
 
-              {/* HƯỚNG DẪN CHỌN BÀI */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center w-full">
-                <p className="text-sm font-medium text-blue-900 flex items-center justify-center gap-2">
-                  <BookOpen size={18} className="text-blue-600" />
-                  <span>Hãy chọn một bài học ở danh sách bên trái để bắt đầu học và làm bài nhé!</span>
-                </p>
-              </div>
-
-              {/* BẢNG THỐNG KÊ, XẾP LOẠI VÀ KHÍCH LỆ */}
+             {/* BẢNG THỐNG KÊ, XẾP LOẠI VÀ KHÍCH LỆ */}
               {(() => {
                 const studentAttempts = db.quizAttempts?.filter(a => a.studentId === currentUser?.linkedStudentId) || [];
                 const totalDone = studentAttempts.length;
