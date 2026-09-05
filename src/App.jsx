@@ -700,6 +700,7 @@ function StudentDashboard({ currentUser, db, setDb, showToast, onLogout }) {
   );
 }
 // ==========================================
+// ==========================================
 // 7b. Quiz Player Sub-component
 // ==========================================
 function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
