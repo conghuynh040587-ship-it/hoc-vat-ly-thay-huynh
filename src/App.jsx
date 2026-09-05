@@ -902,7 +902,7 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
                                     <div className="flex-1 flex gap-2">
                                        <span className={`font-bold ${isSelected ? 'text-blue-700' : 'text-gray-700'}`}>{opt}.</span>
                                        <span className={`text-sm ${isSelected ? 'text-blue-900 font-medium' : 'text-gray-800'}`}>
-                                          {optionText}
+                                          {renderMathContent(optionText)}
                                        </span>
                                     </div>
                                  </label>
