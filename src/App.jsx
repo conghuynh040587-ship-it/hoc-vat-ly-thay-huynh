@@ -1153,22 +1153,22 @@ function DataManagement({ db, setDb, showToast }) {
           <button onClick={() => selectedChapter ? setShowAddLesson(true) : showToast('Chọn chương trước', 'error')} className="col-span-1 py-2 bg-gray-100 hover:bg-gray-200 rounded flex justify-center items-center gap-1 text-xs font-medium border"><Plus size={14}/> Thêm Bài</button>
         </div>
         
-        {/* CÂY THƯ MỤC CÓ ĐỦ NÚT SỬA & XÓA CHO CẢ CHƯƠNG VÀ BÀI HỌC */}
-        <div className="p-4 space-y-2">
+        {/* CÂY THƯ MỤC ĐÃ CANH ĐỀU LỀ TRÁI VÀ CỐ ĐỊNH ICON THAO TÁC BÊN PHẢI */}
+        <div className="p-4 space-y-2 text-left">
           {db.grades.map(grade => (
             <div key={grade.id} className="mb-2">
-              <div className={`font-bold p-2 rounded cursor-pointer ${selectedGrade === grade.id ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`} onClick={() => {setSelectedGrade(grade.id); setSelectedChapter(null); setSelectedLesson(null)}}>
+              <div className={`font-bold p-2 rounded cursor-pointer text-left ${selectedGrade === grade.id ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`} onClick={() => {setSelectedGrade(grade.id); setSelectedChapter(null); setSelectedLesson(null)}}>
                 {grade.name}
               </div>
               {selectedGrade === grade.id && (
-                <div className="ml-4 mt-2 space-y-1 border-l-2 border-gray-200 pl-2">
+                <div className="ml-4 mt-2 space-y-1.5 border-l-2 border-gray-200 pl-2">
                   {db.chapters.filter(c => c.gradeId === grade.id).map(chap => (
-                     <div key={chap.id} className="mb-1">
-                        {/* Hàng tên Chương kèm nút Sửa và Xóa */}
-                        <div className={`p-2 rounded text-sm font-bold cursor-pointer flex justify-between items-center ${selectedChapter === chap.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => {setSelectedChapter(chap.id); setSelectedLesson(null)}}>
-                          <span>{chap.name}</span>
-                          <div className="flex gap-2 text-gray-400 items-center">
-                            <Edit size={14} className="hover:text-blue-600" title="Sửa tên chương" onClick={(e) => {
+                     <div key={chap.id} className="mb-2">
+                        {/* Hàng tên Chương */}
+                        <div className={`p-2.5 rounded text-sm font-bold cursor-pointer flex justify-between items-start gap-2 text-left ${selectedChapter === chap.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => {setSelectedChapter(chap.id); setSelectedLesson(null)}}>
+                          <span className="flex-1 text-left">{chap.name}</span>
+                          <div className="flex gap-2 text-gray-400 items-center shrink-0 pt-0.5">
+                            <Edit size={14} className="hover:text-blue-600 cursor-pointer" title="Sửa tên chương" onClick={(e) => {
                               e.stopPropagation();
                               const newName = prompt('Nhập tên chương mới:', chap.name);
                               if (newName && newName.trim()) {
@@ -1177,7 +1177,7 @@ function DataManagement({ db, setDb, showToast }) {
                                 showToast('Đã cập nhật tên chương');
                               }
                             }}/>
-                            <Trash2 size={14} className="hover:text-red-500" title="Xóa chương" onClick={(e) => { 
+                            <Trash2 size={14} className="hover:text-red-500 cursor-pointer" title="Xóa chương" onClick={(e) => { 
                               e.stopPropagation(); 
                               if(confirm('Xóa chương này sẽ mất các bài học bên trong?')) {
                                 setDb({...db, chapters: db.chapters.filter(c => c.id !== chap.id), lessons: db.lessons.filter(l => l.chapterId !== chap.id)});
@@ -1187,14 +1187,14 @@ function DataManagement({ db, setDb, showToast }) {
                           </div>
                         </div>
 
-                        {/* Danh sách Bài học kèm nút Sửa và Xóa */}
+                        {/* Danh sách Bài học */}
                         {selectedChapter === chap.id && (
-                          <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-100 pl-2">
+                          <div className="ml-4 mt-1 space-y-1.5 border-l-2 border-gray-100 pl-2">
                             {db.lessons.filter(l => l.chapterId === chap.id).map(les => (
-                              <div key={les.id} className={`p-2 text-sm cursor-pointer rounded flex justify-between items-center ${selectedLesson === les.id ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`} onClick={() => setSelectedLesson(les.id)}>
-                                <span>- {les.name}</span>
-                                <div className="flex gap-2 text-gray-400 items-center">
-                                  <Edit size={14} className="hover:text-blue-600" title="Sửa tên bài" onClick={(e) => {
+                              <div key={les.id} className={`p-2 text-sm cursor-pointer rounded flex justify-between items-start gap-2 text-left ${selectedLesson === les.id ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`} onClick={() => setSelectedLesson(les.id)}>
+                                <span className="flex-1 text-left">- {les.name}</span>
+                                <div className="flex gap-2 text-gray-400 items-center shrink-0 pt-0.5">
+                                  <Edit size={14} className="hover:text-blue-600 cursor-pointer" title="Sửa tên bài" onClick={(e) => {
                                     e.stopPropagation();
                                     const newLessonName = prompt('Nhập tên bài học mới:', les.name);
                                     if (newLessonName && newLessonName.trim()) {
@@ -1203,7 +1203,7 @@ function DataManagement({ db, setDb, showToast }) {
                                       showToast('Đã cập nhật tên bài học');
                                     }
                                   }}/>
-                                  <Trash2 size={14} className="hover:text-red-500" title="Xóa bài học" onClick={(e) => { 
+                                  <Trash2 size={14} className="hover:text-red-500 cursor-pointer" title="Xóa bài học" onClick={(e) => { 
                                     e.stopPropagation(); 
                                     if(confirm('Bạn có chắc chắn muốn xóa bài học này không?')) {
                                       setDb({...db, lessons: db.lessons.filter(l => l.id !== les.id), materials: db.materials.filter(m => m.lessonId !== les.id)});
@@ -1224,13 +1224,13 @@ function DataManagement({ db, setDb, showToast }) {
         </div>
       </div>
 
-      <div className="w-full md:w-2/3 bg-gray-50 p-6 overflow-y-auto relative">
+      <div className="w-full md:w-2/3 bg-gray-50 p-6 overflow-y-auto relative text-left">
          {!selectedLesson ? (
           <div className="h-full flex items-center justify-center text-gray-400">Chọn một Bài học ở cột trái để quản lý học liệu</div>
         ) : (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-800">{db.lessons.find(l=>l.id===selectedLesson)?.name}</h2>
+              <h2 className="text-xl font-bold text-gray-800 text-left">{db.lessons.find(l=>l.id===selectedLesson)?.name}</h2>
               <button onClick={() => setShowAddMaterial(true)} className="bg-gray-900 text-white px-4 py-2 rounded font-medium flex items-center gap-2 hover:bg-black shadow-sm">
                 <Plus size={18}/> Gắn học liệu
               </button>
@@ -1242,11 +1242,11 @@ function DataManagement({ db, setDb, showToast }) {
                 if (mats.length === 0) return null;
                 const typeName = type === 'theory' ? 'Lý thuyết' : type === 'video' ? 'Video TN-HT' : 'Đề ôn tập - Kiểm tra';
                 return (
-                  <div key={type} className="bg-white border rounded-lg shadow-sm p-4">
-                    <h3 className="font-bold border-b pb-2 mb-3 text-blue-800">{typeName}</h3>
+                  <div key={type} className="bg-white border rounded-lg shadow-sm p-4 text-left">
+                    <h3 className="font-bold border-b pb-2 mb-3 text-blue-800 text-left">{typeName}</h3>
                     <ul className="space-y-2">
                       {mats.map(m => (
-                        <li key={m.id} className="flex justify-between items-center bg-gray-50 p-3 rounded border">
+                        <li key={m.id} className="flex justify-between items-center bg-gray-50 p-3 rounded border text-left">
                           <div>
                             <span className="font-medium text-gray-800">{m.name}</span>
                             {m.type === 'quiz' && <div className="text-xs text-gray-500 mt-1">🕒 {m.quizConfig.time} phút | 🔄 {m.quizConfig.attempts} lần</div>}
@@ -1271,7 +1271,7 @@ function DataManagement({ db, setDb, showToast }) {
 
       {showAddChapter && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+          <div className="bg-white rounded-lg p-6 w-full max-w-sm text-left">
             <h3 className="font-bold mb-4">Thêm Chương mới</h3>
             <form onSubmit={handleAddChapter}>
               <input required type="text" placeholder="Tên chương (VD: Chương 1: ...)" className="w-full p-2 border rounded mb-4" value={newChapterName} onChange={e=>setNewChapterName(e.target.value)} />
@@ -1283,7 +1283,7 @@ function DataManagement({ db, setDb, showToast }) {
 
       {showAddLesson && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+          <div className="bg-white rounded-lg p-6 w-full max-w-sm text-left">
             <h3 className="font-bold mb-4">Thêm Bài mới</h3>
             <form onSubmit={handleAddLesson}>
               <input required type="text" placeholder="Tên bài (VD: Bài 1: ...)" className="w-full p-2 border rounded mb-4" value={newLessonName} onChange={e=>setNewLessonName(e.target.value)} />
@@ -1295,7 +1295,7 @@ function DataManagement({ db, setDb, showToast }) {
 
       {showAddMaterial && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto text-left">
             <h3 className="font-bold text-xl mb-4 border-b pb-2">Gắn học liệu / Tạo đề</h3>
             <form onSubmit={handleAddMaterial} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -1359,7 +1359,6 @@ function DataManagement({ db, setDb, showToast }) {
     </div>
   );
 }
-
 // ==========================================
 // 8c. QUIZ EDITOR (TRẮC NGHIỆM NHIỀU LỰA CHỌN THEO DẠNG DÒNG DỌC)
 // ==========================================
