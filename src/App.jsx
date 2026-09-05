@@ -17,19 +17,139 @@ const INITIAL_DATA = {
     { id: 'g11', name: 'Khối 11' },
     { id: 'g12', name: 'Khối 12' },
   ],
-  classes: [{ id: 'c1', gradeId: 'g10', name: '10A1' }],
+  classes: [{ id: 'c1', gradeId: 'g12', name: '12A1' }],
   studentsList: [
-    // Danh sách giáo viên nhập
     { id: 'sl1', classId: 'c1', name: 'Nguyễn Văn A', gender: 'Nam', phone: '0123456789', email: 'a@gmail.com', done: 0, total: 5 },
   ],
   studentUsers: [
-    // Tài khoản học sinh tự tạo
     { id: 'u1', name: 'Nguyễn Văn A', phone: '0123456789', email: 'a@gmail.com', password: '123', linkedStudentId: null, needPasswordChange: false }
   ],
-  chapters: [{ id: 'ch1', gradeId: 'g10', name: 'Chương 1: Động học chất điểm' }],
-  lessons: [{ id: 'l1', chapterId: 'ch1', name: 'Bài 1: Chuyển động cơ' }],
+  chapters: [
+    // --- KHỐI 10 ---
+    { id: 'ch10_1', gradeId: 'g10', name: 'Chương I. Mở đầu' },
+    { id: 'ch10_2', gradeId: 'g10', name: 'Chương II. Động học' },
+    { id: 'ch10_3', gradeId: 'g10', name: 'Chương III. Động lực học' },
+    { id: 'ch10_4', gradeId: 'g10', name: 'Chương IV. Năng lượng, công, công suất' },
+    { id: 'ch10_5', gradeId: 'g10', name: 'Chương V. Động lượng' },
+    { id: 'ch10_6', gradeId: 'g10', name: 'Chương VI. Chuyển động tròn' },
+    { id: 'ch10_7', gradeId: 'g10', name: 'Chương VII. Biến dạng của vật rắn. Áp suất chất lỏng' },
+
+    // --- KHỐI 11 ---
+    { id: 'ch11_1', gradeId: 'g11', name: 'Chương 1. Dao động' },
+    { id: 'ch11_2', gradeId: 'g11', name: 'Chương 2. Sóng' },
+    { id: 'ch11_3', gradeId: 'g11', name: 'Chương 3. Điện trường' },
+    { id: 'ch11_4', gradeId: 'g11', name: 'Chương 4. Dòng điện. Mạch điện' },
+
+    // --- KHỐI 12 ---
+    { id: 'ch12_1', gradeId: 'g12', name: 'Chương 1. Vật lí nhiệt' },
+    { id: 'ch12_2', gradeId: 'g12', name: 'Chương 2. Khí lí tưởng' },
+    { id: 'ch12_3', gradeId: 'g12', name: 'Chương 3. Từ trường' },
+    { id: 'ch12_4', gradeId: 'g12', name: 'Chương 4. Vật lí hạt nhân' }
+  ],
+  lessons: [
+    // ================= KHỐI 10 =================
+    { id: 'l10_1', chapterId: 'ch10_1', name: 'Bài 1. Làm quen với Vật lí' },
+    { id: 'l10_2', chapterId: 'ch10_1', name: 'Bài 2. Các quy tắc an toàn trong phòng thực hành Vật lí' },
+    { id: 'l10_3', chapterId: 'ch10_1', name: 'Bài 3. Thực hành tính sai số trong phép đo. Ghi kết quả đo' },
+    
+    { id: 'l10_4', chapterId: 'ch10_2', name: 'Bài 4. Độ dịch chuyển và quãng đường đi được' },
+    { id: 'l10_5', chapterId: 'ch10_2', name: 'Bài 5. Tốc độ và vận tốc' },
+    { id: 'l10_6', chapterId: 'ch10_2', name: 'Bài 6. Thực hành: Đo tốc độ của vật chuyển động' },
+    { id: 'l10_7', chapterId: 'ch10_2', name: 'Bài 7. Đồ thị độ dịch chuyển - thời gian' },
+    { id: 'l10_8', chapterId: 'ch10_2', name: 'Bài 8. Chuyển động biến đổi. Gia tốc' },
+    { id: 'l10_9', chapterId: 'ch10_2', name: 'Bài 9. Chuyển động thẳng biến đổi đều' },
+    { id: 'l10_10', chapterId: 'ch10_2', name: 'Bài 10. Sự rơi tự do' },
+    { id: 'l10_11', chapterId: 'ch10_2', name: 'Bài 11. Thực hành: Đo gia tốc rơi tự do' },
+    { id: 'l10_12', chapterId: 'ch10_2', name: 'Bài 12. Chuyển động ném' },
+
+    { id: 'l10_13', chapterId: 'ch10_3', name: 'Bài 13. Tổng hợp và phân tích lực. Cân bằng lực' },
+    { id: 'l10_14', chapterId: 'ch10_3', name: 'Bài 14. Định luật 1 Newton' },
+    { id: 'l10_15', chapterId: 'ch10_3', name: 'Bài 15. Định luật 2 Newton' },
+    { id: 'l10_16', chapterId: 'ch10_3', name: 'Bài 16. Định luật 3 Newton' },
+    { id: 'l10_17', chapterId: 'ch10_3', name: 'Bài 17. Trọng lực và lực căng' },
+    { id: 'l10_18', chapterId: 'ch10_3', name: 'Bài 18. Lực ma sát' },
+    { id: 'l10_19', chapterId: 'ch10_3', name: 'Bài 19. Lực cản và lực nâng' },
+    { id: 'l10_20', chapterId: 'ch10_3', name: 'Bài 20. Một số ví dụ về cách giải các bài toán thuộc phần động lực học' },
+    { id: 'l10_21', chapterId: 'ch10_3', name: 'Bài 21. Moment lực. Cân bằng của vật rắn' },
+    { id: 'l10_22', chapterId: 'ch10_3', name: 'Bài 22. Thực hành: Tổng hợp lực' },
+
+    { id: 'l10_23', chapterId: 'ch10_4', name: 'Bài 23. Năng lượng. Công cơ học' },
+    { id: 'l10_24', chapterId: 'ch10_4', name: 'Bài 24. Công suất' },
+    { id: 'l10_25', chapterId: 'ch10_4', name: 'Bài 25. Động năng, thế năng' },
+    { id: 'l10_26', chapterId: 'ch10_4', name: 'Bài 26. Cơ năng và định luật bảo toàn cơ năng' },
+    { id: 'l10_27', chapterId: 'ch10_4', name: 'Bài 27. Hiệu suất' },
+
+    { id: 'l10_28', chapterId: 'ch10_5', name: 'Bài 28. Động lượng' },
+    { id: 'l10_29', chapterId: 'ch10_5', name: 'Bài 29. Định luật bảo toàn động lượng' },
+    { id: 'l10_30', chapterId: 'ch10_5', name: 'Bài 30. Thực hành: Xác định động lượng của vật trước và sau va chạm' },
+
+    { id: 'l10_31', chapterId: 'ch10_6', name: 'Bài 31. Động học của chuyển động tròn đều' },
+    { id: 'l10_32', chapterId: 'ch10_6', name: 'Bài 32. Lực hướng tâm và gia tốc hướng tâm' },
+
+    { id: 'l10_33', chapterId: 'ch10_7', name: 'Bài 33. Biến dạng của vật rắn' },
+    { id: 'l10_34', chapterId: 'ch10_7', name: 'Bài 34. Khối lượng riêng. Áp suất chất lỏng' },
+
+    // ================= KHỐI 11 =================
+    { id: 'l11_1', chapterId: 'ch11_1', name: 'Bài 1. Dao động điều hòa' },
+    { id: 'l11_2', chapterId: 'ch11_1', name: 'Bài 2. Mô tả dao động điều hòa' },
+    { id: 'l11_3', chapterId: 'ch11_1', name: 'Bài 3. Vận tốc, gia tốc trong dao động điều hòa' },
+    { id: 'l11_4', chapterId: 'ch11_1', name: 'Bài 4. Bài tập về dao động điều hòa' },
+    { id: 'l11_5', chapterId: 'ch11_1', name: 'Bài 5. Động năng. Thế năng. Sự chuyển hóa năng lượng trong dao động điều hòa' },
+    { id: 'l11_6', chapterId: 'ch11_1', name: 'Bài 6. Dao động tắt dần. Dao động cưỡng bức. Hiện tượng cộng hưởng' },
+    { id: 'l11_7', chapterId: 'ch11_1', name: 'Bài 7. Bài tập về sự chuyển hóa năng lượng trong dao động điều hòa' },
+
+    { id: 'l11_8', chapterId: 'ch11_2', name: 'Bài 8. Mô tả sóng' },
+    { id: 'l11_9', chapterId: 'ch11_2', name: 'Bài 9. Sóng ngang. Sóng dọc. Sự truyền năng lượng của sóng cơ' },
+    { id: 'l11_10', chapterId: 'ch11_2', name: 'Bài 10. Thực hành: Đo tần số của sóng âm' },
+    { id: 'l11_11', chapterId: 'ch11_2', name: 'Bài 11. Sóng điện từ' },
+    { id: 'l11_12', chapterId: 'ch11_2', name: 'Bài 12. Giao thoa sóng' },
+    { id: 'l11_13', chapterId: 'ch11_2', name: 'Bài 13. Sóng dừng' },
+    { id: 'l11_14', chapterId: 'ch11_2', name: 'Bài 14. Bài tập về sóng dừng' },
+    { id: 'l11_15', chapterId: 'ch11_2', name: 'Bài 15. Thực hành: Đo tốc độ truyền âm' },
+
+    { id: 'l11_16', chapterId: 'ch11_3', name: 'Bài 16. Lực tương tác giữa hai điện tích' },
+    { id: 'l11_17', chapterId: 'ch11_3', name: 'Bài 17. Khái niệm điện trường' },
+    { id: 'l11_18', chapterId: 'ch11_3', name: 'Bài 18. Điện trường đều' },
+    { id: 'l11_19', chapterId: 'ch11_3', name: 'Bài 19. Thế năng điện' },
+    { id: 'l11_20', chapterId: 'ch11_3', name: 'Bài 20. Điện thế' },
+    { id: 'l11_21', chapterId: 'ch11_3', name: 'Bài 21. Tụ điện' },
+
+    { id: 'l11_22', chapterId: 'ch11_4', name: 'Bài 22. Cường độ dòng điện' },
+    { id: 'l11_23', chapterId: 'ch11_4', name: 'Bài 23. Điện trở. Định luật Ohm' },
+    { id: 'l11_24', chapterId: 'ch11_4', name: 'Bài 24. Nguồn điện' },
+    { id: 'l11_25', chapterId: 'ch11_4', name: 'Bài 25. Năng lượng và công suất điện' },
+    { id: 'l11_26', chapterId: 'ch11_4', name: 'Bài 26. Thực hành: Đo suất điện động và điện trở trong của pin điện hóa' },
+
+    // ================= KHỐI 12 =================
+    { id: 'l12_1', chapterId: 'ch12_1', name: 'Bài 1. Cấu trúc của chất. Sự chuyển thể' },
+    { id: 'l12_2', chapterId: 'ch12_1', name: 'Bài 2. Nội năng. Định luật I của nhiệt động lực học' },
+    { id: 'l12_3', chapterId: 'ch12_1', name: 'Bài 3. Nhiệt độ, thang nhiệt độ, nhiệt kế' },
+    { id: 'l12_4', chapterId: 'ch12_1', name: 'Bài 4. Nhiệt dung riêng' },
+    { id: 'l12_5', chapterId: 'ch12_1', name: 'Bài 5. Nhiệt nóng chảy riêng' },
+    { id: 'l12_6', chapterId: 'ch12_1', name: 'Bài 6. Nhiệt hóa hơi riêng' },
+    { id: 'l12_7', chapterId: 'ch12_1', name: 'Bài 7. Bài tập vật lí nhiệt' },
+
+    { id: 'l12_8', chapterId: 'ch12_2', name: 'Bài 8. Mô hình động học phân tử chất khí' },
+    { id: 'l12_9', chapterId: 'ch12_2', name: 'Bài 9. Định luật Boyle' },
+    { id: 'l12_10', chapterId: 'ch12_2', name: 'Bài 10. Định luật Charles' },
+    { id: 'l12_11', chapterId: 'ch12_2', name: 'Bài 11. Phương trình trạng thái của khí lí tưởng' },
+    { id: 'l12_12', chapterId: 'ch12_2', name: 'Bài 12. Bài tập về khí lí tưởng' },
+    { id: 'l12_13', chapterId: 'ch12_2', name: 'Bài 13. Áp suất khí theo mô hình động học phân tử. Động năng phân tử và nhiệt độ' },
+
+    { id: 'l12_14', chapterId: 'ch12_3', name: 'Bài 14. Từ trường' },
+    { id: 'l12_15', chapterId: 'ch12_3', name: 'Bài 15. Lực từ tác dụng lên đoạn dây dẫn mang dòng điện. Cảm ứng từ' },
+    { id: 'l12_16', chapterId: 'ch12_3', name: 'Bài 16. Từ thông. Hiện tượng cảm ứng điện từ' },
+    { id: 'l12_17', chapterId: 'ch12_3', name: 'Bài 17. Đàn ghi ta điện. Máy biến áp' },
+    { id: 'l12_18', chapterId: 'ch12_3', name: 'Bài 18. Máy phát điện xoay chiều' },
+    { id: 'l12_19', chapterId: 'ch12_3', name: 'Bài 19. Điện từ trường. Mô hình sóng điện từ' },
+
+    { id: 'l12_20', chapterId: 'ch12_4', name: 'Bài 20. Cấu trúc hạt nhân' },
+    { id: 'l12_21', chapterId: 'ch12_4', name: 'Bài 21. Phản ứng hạt nhân và năng lượng liên kết' },
+    { id: 'l12_22', chapterId: 'ch12_4', name: 'Bài 22. Hiện tượng phóng xạ' },
+    { id: 'l12_23', chapterId: 'ch12_4', name: 'Bài 23. Công nghiệp hạt nhân' }
+  ],
   materials: [
-    { id: 'm1', lessonId: 'l1', name: 'Lý thuyết cơ bản', type: 'theory', link: 'https://example.com' },
+    { id: 'm1', lessonId: 'l12_1', name: 'Lý thuyết cơ bản', type: 'theory', link: 'https://example.com' },
   ],
   resetRequests: [],
   quizAttempts: []
