@@ -334,6 +334,9 @@ function StudentLinkProfile({ setRoute, currentUser, setCurrentUser, db, setDb, 
 // ==========================================
 // 7. STUDENT DASHBOARD (ĐÃ TỐI ƯU MOBILE)
 // ==========================================
+// ==========================================
+// 7. STUDENT DASHBOARD (CHUẨN XÁC 100%)
+// ==========================================
 function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
   const studentInfo = db.studentsList.find(s => s.id === currentUser.linkedStudentId);
   const classInfo = db.classes.find(c => c.id === studentInfo?.classId);
@@ -343,7 +346,7 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [activeTab, setActiveTab] = useState('theory'); 
   const [activeQuiz, setActiveQuiz] = useState(null); 
-  const [showMobileMenu, setShowMobileMenu] = useState(false); // Trạng thái ẩn/hiện mục lục trên mobile
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const toggleChapter = (chapId) => setExpandedChapters(prev => ({ ...prev, [chapId]: !prev[chapId] }));
 
@@ -356,7 +359,6 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* HEADER: Thu nhỏ chữ và ép trên 1 hàng ngang */}
       <header className="bg-blue-700 text-white shadow-md">
         <div className="px-3 py-2 flex justify-between items-center">
           <h1 className="text-xs sm:text-lg md:text-xl font-bold uppercase tracking-wider truncate mr-2">
@@ -371,7 +373,6 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
         </div>
       </header>
 
-      {/* THÔNG TIN HỌC SINH: Dạng 1 dòng ngang trên mobile */}
       <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 flex flex-row justify-between items-center text-xs sm:text-sm">
         <div className="font-semibold text-blue-900 flex items-center gap-1.5 truncate">
           <User size={16} className="text-blue-700 shrink-0"/> 
@@ -382,7 +383,6 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
         </div>
       </div>
 
-      {/* NÚT BẬT/TẮT MỤC LỤC TRÊN ĐIỆN THOẠI */}
       <div className="md:hidden bg-gray-100 p-2 border-b flex justify-between items-center">
         <button 
           onClick={() => setShowMobileMenu(!showMobileMenu)} 
@@ -393,7 +393,6 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
       </div>
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* MỤC LỤC BÀI HỌC: Ẩn/Hiện linh hoạt trên mobile, giữ nguyên trên PC */}
         <div className={`
           ${showMobileMenu ? 'absolute inset-0 z-20 bg-white w-full h-full' : 'hidden'} 
           md:flex md:w-1/3 bg-gray-50 border-r border-gray-200 flex-col overflow-y-auto
@@ -421,7 +420,7 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
                           key={les.id} 
                           onClick={() => {
                             setSelectedLesson(les.id);
-                            setShowMobileMenu(false); // Chọn bài xong tự động ẩn mục lục trên mobile
+                            setShowMobileMenu(false);
                           }}
                           className={`w-full text-left p-2 pl-6 rounded text-sm transition-colors truncate ${selectedLesson === les.id ? 'bg-blue-100 text-blue-700 font-bold' : 'hover:bg-gray-100 text-gray-600'}`}
                         >
@@ -436,7 +435,6 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
           </div>
         </div>
 
-        {/* NỘI DUNG CHÍNH: Tên bài ép trên 1 dòng */}
         <div className="w-full md:w-2/3 bg-white p-4 sm:p-6 overflow-y-auto flex flex-col">
           {!selectedLesson ? (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-400 py-12">
@@ -489,57 +487,6 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
     </div>
   );
 }
-
-        <div className="w-full md:w-2/3 bg-white p-6 overflow-y-auto flex flex-col">
-          {!selectedLesson ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-              <BookOpen size={64} className="mb-4 opacity-50" />
-              <p>Chọn một bài học ở danh sách bên trái để bắt đầu</p>
-            </div>
-          ) : (
-            <>
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">{db.lessons.find(l=>l.id===selectedLesson)?.name}</h2>
-              
-              <div className="flex border-b border-gray-200 mb-6">
-                <button onClick={() => setActiveTab('theory')} className={`px-4 py-2 font-medium flex items-center gap-2 border-b-2 ${activeTab === 'theory' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-                  <FileText size={18}/> Lý thuyết
-                </button>
-                <button onClick={() => setActiveTab('video')} className={`px-4 py-2 font-medium flex items-center gap-2 border-b-2 ${activeTab === 'video' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-                  <Video size={18}/> Video thí nghiệm
-                </button>
-                <button onClick={() => setActiveTab('quiz')} className={`px-4 py-2 font-medium flex items-center gap-2 border-b-2 ${activeTab === 'quiz' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-                  <FileQuestion size={18}/> Đề ôn tập - Kiểm tra
-                </button>
-              </div>
-
-              <div className="flex-1">
-                {materialsForLesson.filter(m => m.type === activeTab).length === 0 ? (
-                  <p className="text-gray-500 italic">Chưa có dữ liệu cho mục này.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {materialsForLesson.filter(m => m.type === activeTab).map(mat => (
-                      <div key={mat.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
-                        <h4 className="font-bold text-lg mb-2">{mat.name}</h4>
-                        {mat.type === 'theory' || mat.type === 'video' ? (
-                           <a href={mat.link} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm">Xem chi tiết (Mở link)</a>
-                        ) : (
-                           <div>
-                              <p className="text-sm text-gray-600 mb-3"><Clock size={14} className="inline mr-1"/> Thời gian: {mat.quizConfig?.time} phút | Số lần làm: {mat.quizConfig?.attempts}</p>
-                              <button onClick={() => setActiveQuiz(mat)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm font-medium">Bắt đầu làm bài</button>
-                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-      
-        </div>
-  
-    </div>
-  );
-}
-
 // --- 7b. Quiz Player Sub-component ---
 function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
   const [timeLeft, setTimeLeft] = useState((quiz.quizConfig?.time || 45) * 60);
