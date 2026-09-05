@@ -1207,7 +1207,7 @@ function DataManagement({ db, setDb, showToast }) {
 }
 
 // ==========================================
-// 8c. QUIZ EDITOR (THIẾT KẾ MỚI: NỀN TRẮNG, TÁCH BIỆT RÕ RÀNG)
+// 8c. QUIZ EDITOR (TRẮC NGHIỆM NHIỀU LỰA CHỌN THEO DẠNG DÒNG DỌC)
 // ==========================================
 function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
   const quiz = db.materials.find(m => m.id === quizId);
@@ -1237,6 +1237,8 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
       content: '',
       image: '',
       answerMCQ: 'A',
+      // Thêm các option text riêng cho multi nếu thầy muốn nhập chữ cho A, B, C, D (nếu cấu trúc cũ lưu string thuần, em hỗ trợ cả 2 dạng)
+      options: ['', '', '', ''],
       tfStatements: [
         { text: '', isTrue: true },
         { text: '', isTrue: false },
@@ -1244,8 +1246,6 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
         { text: '', isTrue: false },
       ],
       answerShort: '',
-      answerNumMin: '',
-      answerNumMax: '',
       answerNumDot: ''
     };
     setQuestions([...questions, newQ]);
@@ -1254,6 +1254,13 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
   const updateQuestion = (index, field, value) => {
     const updated = [...questions];
     updated[index][field] = value;
+    setQuestions(updated);
+  };
+
+  const updateOption = (qIndex, optIndex, value) => {
+    const updated = [...questions];
+    if (!updated[qIndex].options) updated[qIndex].options = ['', '', '', ''];
+    updated[qIndex].options[optIndex] = value;
     setQuestions(updated);
   };
 
@@ -1358,18 +1365,30 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                 />
               </div>
 
-              {/* PHẦN ĐÁP ÁN (TÁCH BIỆT RÕ RÀNG THEO TỪNG LOẠI) */}
+              {/* PHẦN ĐÁP ÁN */}
               <div className="mt-4 pt-3 border-t border-dashed border-gray-200">
                 
-                {/* 1. TRẮC NGHIỆM NHIỀU LỰA CHỌN (TÁCH BIỆT PHẦN CHỌN ĐÁP ÁN) */}
+                {/* 1. TRẮC NGHIỆM NHIỀU LỰA CHỌN (DẠNG DÒNG DỌC GIỐNG ĐÚNG/SAI) */}
                 {q.type === 'multi' && (
-                  <div className="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
-                    <span className="block text-xs font-bold text-blue-900 uppercase tracking-wider mb-2">Phần chọn đáp án đúng</span>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm font-medium text-gray-700">Chọn đáp án đúng nhất:</span>
-                      <div className="flex gap-3">
-                        {['A', 'B', 'C', 'D'].map(opt => (
-                          <label key={opt} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border cursor-pointer font-bold text-sm transition-colors ${q.answerMCQ === opt ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="block text-xs font-bold text-blue-900 uppercase tracking-wider">Phần các phương án A, B, C, D</span>
+                      <span className="text-xs text-gray-500 italic">Chọn nút tròn tương ứng với đáp án đúng</span>
+                    </div>
+                    {['A', 'B', 'C', 'D'].map((opt, optIdx) => (
+                      <div key={opt} className="bg-gray-50 p-3 rounded-md border border-gray-200 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                        <span className="font-bold text-blue-700 w-6 text-sm">
+                          {opt}.
+                        </span>
+                        <textarea 
+                          rows={2}
+                          value={q.options ? q.options[optIdx] : ''}
+                          onChange={(e) => updateOption(qIndex, optIdx, e.target.value)}
+                          placeholder={`Nhập nội dung phương án ${opt}...`}
+                          className="flex-1 w-full p-2.5 rounded bg-white text-gray-800 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        />
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                          <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-bold cursor-pointer transition-colors ${q.answerMCQ === opt ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}>
                             <input 
                               type="radio" 
                               name={`mcq-${q.id}`} 
@@ -1377,11 +1396,11 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                               onChange={() => updateQuestion(qIndex, 'answerMCQ', opt)}
                               className="hidden"
                             />
-                            {opt}
+                            {q.answerMCQ === opt ? '✓ Đáp án đúng' : 'Chọn đúng'}
                           </label>
-                        ))}
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 )}
 
@@ -1472,7 +1491,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
             <button onClick={() => addQuestion('truefalse')} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded text-xs font-medium shadow-sm">
               + Trắc nghiệm Đúng / Sai
             </button>
-            <button onClick={() => addQuestion('green') || addQuestion('short')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded text-xs font-medium shadow-sm">
+            <button onClick={() => addQuestion('short')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded text-xs font-medium shadow-sm">
               + Trả lời ngắn
             </button>
             <button onClick={() => addQuestion('number')} className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded text-xs font-medium shadow-sm">
@@ -1485,7 +1504,6 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
     </div>
   );
 }
-
 // --- 8d. Result Management Sub-component ---
 function ResultManagement({ db }) {
   const [selectedQuizId, setSelectedQuizId] = useState(null);
