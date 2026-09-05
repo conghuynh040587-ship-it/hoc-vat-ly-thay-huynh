@@ -356,7 +356,7 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
       {/* HEADER: Thu nhỏ size chữ tiêu đề (text-[11px] trên mobile) và bố trí gọn gàng */}
       <header className="bg-blue-700 text-white shadow-md">
         <div className="px-3 py-2 flex flex-col sm:flex-row justify-between items-center gap-2">
-          <h1 className="text-[11px] sm:text-base md:text-xl font-bold uppercase tracking-wide leading-tight text-center sm:text-left">
+          <h1 className="text-[8px] sm:text-base md:text-xl font-bold uppercase tracking-wide leading-tight text-center sm:text-left">
             HỌC VẬT LÝ CÙNG THẦY LÊ CÔNG HUYNH
           </h1>
           <button onClick={() => setRoute('landing')} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 px-2.5 py-1 rounded text-xs whitespace-nowrap shadow-sm font-medium shrink-0">
