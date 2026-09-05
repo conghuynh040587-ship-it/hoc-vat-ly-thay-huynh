@@ -1089,6 +1089,7 @@ function ClassManagement({ db, setDb, showToast }) {
 }
 
 // --- 8b. Data Management Sub-component ---
+// --- 8b. Data Management Sub-component ---
 function DataManagement({ db, setDb, showToast }) {
   const [editingQuizId, setEditingQuizId] = useState(null);
   const [selectedGrade, setSelectedGrade] = useState(null);
@@ -1151,6 +1152,8 @@ function DataManagement({ db, setDb, showToast }) {
           <button onClick={() => selectedGrade ? setShowAddChapter(true) : showToast('Chọn khối trước', 'error')} className="col-span-1 py-2 bg-gray-100 hover:bg-gray-200 rounded flex justify-center items-center gap-1 text-xs font-medium border"><Plus size={14}/> Thêm Chương</button>
           <button onClick={() => selectedChapter ? setShowAddLesson(true) : showToast('Chọn chương trước', 'error')} className="col-span-1 py-2 bg-gray-100 hover:bg-gray-200 rounded flex justify-center items-center gap-1 text-xs font-medium border"><Plus size={14}/> Thêm Bài</button>
         </div>
+        
+        {/* CÂY THƯ MỤC CÓ ĐỦ NÚT SỬA & XÓA CHO CẢ CHƯƠNG VÀ BÀI HỌC */}
         <div className="p-4 space-y-2">
           {db.grades.map(grade => (
             <div key={grade.id} className="mb-2">
@@ -1160,16 +1163,54 @@ function DataManagement({ db, setDb, showToast }) {
               {selectedGrade === grade.id && (
                 <div className="ml-4 mt-2 space-y-1 border-l-2 border-gray-200 pl-2">
                   {db.chapters.filter(c => c.gradeId === grade.id).map(chap => (
-                     <div key={chap.id}>
-                        <div className={`p-2 rounded text-sm font-medium cursor-pointer flex justify-between ${selectedChapter === chap.id ? 'text-blue-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => {setSelectedChapter(chap.id); setSelectedLesson(null)}}>
+                     <div key={chap.id} className="mb-1">
+                        {/* Hàng tên Chương kèm nút Sửa và Xóa */}
+                        <div className={`p-2 rounded text-sm font-bold cursor-pointer flex justify-between items-center ${selectedChapter === chap.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => {setSelectedChapter(chap.id); setSelectedLesson(null)}}>
                           <span>{chap.name}</span>
-                          <Trash2 size={14} className="text-gray-400 hover:text-red-500" onClick={(e) => { e.stopPropagation(); setDb({...db, chapters: db.chapters.filter(c => c.id !== chap.id)});}}/>
+                          <div className="flex gap-2 text-gray-400 items-center">
+                            <Edit size={14} className="hover:text-blue-600" title="Sửa tên chương" onClick={(e) => {
+                              e.stopPropagation();
+                              const newName = prompt('Nhập tên chương mới:', chap.name);
+                              if (newName && newName.trim()) {
+                                const updatedChapters = db.chapters.map(c => c.id === chap.id ? { ...c, name: newName.trim() } : c);
+                                setDb({ ...db, chapters: updatedChapters });
+                                showToast('Đã cập nhật tên chương');
+                              }
+                            }}/>
+                            <Trash2 size={14} className="hover:text-red-500" title="Xóa chương" onClick={(e) => { 
+                              e.stopPropagation(); 
+                              if(confirm('Xóa chương này sẽ mất các bài học bên trong?')) {
+                                setDb({...db, chapters: db.chapters.filter(c => c.id !== chap.id), lessons: db.lessons.filter(l => l.chapterId !== chap.id)});
+                                showToast('Đã xóa chương'); 
+                              }
+                            }}/>
+                          </div>
                         </div>
+
+                        {/* Danh sách Bài học kèm nút Sửa và Xóa */}
                         {selectedChapter === chap.id && (
-                          <div className="ml-4 space-y-1">
+                          <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-100 pl-2">
                             {db.lessons.filter(l => l.chapterId === chap.id).map(les => (
-                              <div key={les.id} className={`p-1 text-sm cursor-pointer rounded flex justify-between ${selectedLesson === les.id ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-gray-500 hover:text-gray-800'}`} onClick={() => setSelectedLesson(les.id)}>
+                              <div key={les.id} className={`p-2 text-sm cursor-pointer rounded flex justify-between items-center ${selectedLesson === les.id ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`} onClick={() => setSelectedLesson(les.id)}>
                                 <span>- {les.name}</span>
+                                <div className="flex gap-2 text-gray-400 items-center">
+                                  <Edit size={14} className="hover:text-blue-600" title="Sửa tên bài" onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newLessonName = prompt('Nhập tên bài học mới:', les.name);
+                                    if (newLessonName && newLessonName.trim()) {
+                                      const updatedLessons = db.lessons.map(l => l.id === les.id ? { ...l, name: newLessonName.trim() } : l);
+                                      setDb({ ...db, lessons: updatedLessons });
+                                      showToast('Đã cập nhật tên bài học');
+                                    }
+                                  }}/>
+                                  <Trash2 size={14} className="hover:text-red-500" title="Xóa bài học" onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    if(confirm('Bạn có chắc chắn muốn xóa bài học này không?')) {
+                                      setDb({...db, lessons: db.lessons.filter(l => l.id !== les.id), materials: db.materials.filter(m => m.lessonId !== les.id)});
+                                      showToast('Đã xóa bài học'); 
+                                    }
+                                  }}/>
+                                </div>
                               </div>
                             ))}
                           </div>
