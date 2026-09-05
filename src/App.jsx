@@ -329,7 +329,7 @@ function StudentLinkProfile({ setRoute, currentUser, setCurrentUser, db, setDb, 
 }
 
 // ==========================================
-// 7. STUDENT DASHBOARD (TỐI ƯU HOÀN HẢO MOBILE)
+// 7. STUDENT DASHBOARD (TỐI ƯU GỌN GÀNG MOBILE)
 // ==========================================
 function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
   const studentInfo = db.studentsList.find(s => s.id === currentUser.linkedStudentId);
@@ -353,29 +353,33 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* HEADER: Thu nhỏ chữ vừa vặn màn hình di động */}
+      {/* HEADER: Tiêu đề dòng trên, nút Đăng xuất xuống dòng dưới cho rộng rãi */}
       <header className="bg-blue-700 text-white shadow-md">
-        <div className="px-2.5 py-2 flex justify-between items-center gap-1">
-          <h1 className="text-[11px] sm:text-base md:text-xl font-bold uppercase tracking-tight truncate">
-            HỌC VẬT LÝ CÙNG THẦY HUYNH
-          </h1>
-          <button onClick={() => setRoute('landing')} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded text-xs whitespace-nowrap shrink-0">
-            <LogOut size={13}/> Đăng xuất
-          </button>
+        <div className="px-3 py-2 flex flex-col gap-2">
+          <div className="flex justify-between items-center">
+            <h1 className="text-xs sm:text-lg md:text-xl font-bold uppercase tracking-wide leading-tight">
+              HỌC VẬT LÝ CÙNG THẦY LÊ CÔNG HUYNH
+            </h1>
+          </div>
+          <div className="flex justify-end">
+            <button onClick={() => setRoute('landing')} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-xs whitespace-nowrap shadow-sm">
+              <LogOut size={13}/> Đăng xuất
+            </button>
+          </div>
         </div>
         <div className="bg-blue-800 text-blue-100 text-xs py-1 overflow-hidden">
           <marquee scrollamount="5">Vật lý không khó - Đã có thầy Huynh lo! Chúc các em học tập thật tốt và đạt kết quả cao trong các kỳ thi sắp tới.</marquee>
         </div>
       </header>
 
-      {/* THÔNG TIN HỌC SINH: Thêm khoảng cách (gap) để không bị dính chữ */}
-      <div className="bg-blue-50 border-b border-blue-100 px-3 py-2 flex flex-row justify-between items-center text-xs sm:text-sm gap-2">
-        <div className="font-semibold text-blue-900 flex items-center gap-1 truncate">
+      {/* THÔNG TIN HỌC SINH: Chỉ hiện tên và lớp, đã xóa phần "Đã làm" */}
+      <div className="bg-blue-50 border-b border-blue-100 px-3 py-2 flex justify-between items-center text-xs sm:text-sm">
+        <div className="font-semibold text-blue-900 flex items-center gap-1.5 truncate">
           <User size={15} className="text-blue-700 shrink-0"/> 
           <span className="truncate">{studentInfo?.name}</span>
         </div>
-        <div className="text-blue-800 shrink-0 font-medium text-[11px] sm:text-sm">
-          Lớp: <span className="font-bold">{classInfo?.name}</span> | Đã làm: <span className="font-bold text-green-700">{studentInfo?.done}/{studentInfo?.total}</span>
+        <div className="text-blue-800 font-medium shrink-0">
+          Lớp: <span className="font-bold">{classInfo?.name}</span>
         </div>
       </div>
 
@@ -419,7 +423,7 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
                             setSelectedLesson(les.id);
                             setShowMobileMenu(false);
                           }}
-                          className={`w-full text-left p-2 pl-6 rounded text-sm transition-colors truncate ${selectedLesson === les.id ? 'bg-blue-100 text-blue-700 font-bold' : 'hover:bg-gray-100 text-gray-600'}`}
+                          className={`w-full text-left p-2 pl-6 rounded text-sm transition-colors ${selectedLesson === les.id ? 'bg-blue-100 text-blue-700 font-bold' : 'hover:bg-gray-100 text-gray-600'}`}
                         >
                           • {les.name}
                         </button>
@@ -440,7 +444,7 @@ function StudentDashboard({ setRoute, currentUser, db, setDb, showToast }) {
             </div>
           ) : (
             <>
-              <h2 className="text-base sm:text-2xl font-bold text-gray-800 mb-4 truncate w-full">
+              <h2 className="text-base sm:text-2xl font-bold text-gray-800 mb-4 leading-snug">
                 {db.lessons.find(l=>l.id===selectedLesson)?.name}
               </h2>
               
