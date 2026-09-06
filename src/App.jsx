@@ -2391,6 +2391,8 @@ function ResultManagement({ db, showToast }) {
 
 /**
  * ==========================================
+/**
+ * ==========================================
  * MAIN COMPONENT & STATE MANAGEMENT (App.jsx)
  * ==========================================
  */
@@ -2405,7 +2407,7 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
- // Dữ liệu mẫu mặc định ban đầu nếu trên đám mây chưa có gì
+  // Dữ liệu mẫu mặc định ban đầu nếu trên đám mây chưa có gì
   const defaultDbData = {
     grades: [
       { id: 'g10', name: 'Khối 10' },
@@ -2478,7 +2480,7 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Hàm cập nhật dữ liệu đẩy lên đám mây
+  // Hàm cập nhật dữ liệu đẩy lên đám mây (Firebase)
   const updateDatabase = async (newDbOrUpdater) => {
     let updatedData;
     if (typeof newDbOrUpdater === 'function') {
@@ -2497,8 +2499,6 @@ export default function App() {
       showToast("Lỗi đồng bộ dữ liệu lên máy chủ!");
     }
   };
-  // Tự động ghi lại vào localStorage mỗi khi db thay đổi
-
 
   const handleLoginSuccess = (userData) => {
     setCurrentUser(userData);
@@ -2520,7 +2520,7 @@ export default function App() {
       timestamp: new Date().toLocaleTimeString() + ' ' + new Date().toLocaleDateString()
     };
 
-    setDb(prev => ({
+    updateDatabase(prev => ({
       ...prev,
       quizAttempts: [...(prev.quizAttempts || []), newAttempt]
     }));
@@ -2603,8 +2603,8 @@ export default function App() {
       </div>
 
       <main className="flex-1 overflow-hidden relative">
-        {activeTab === 'classes' && <ClassManagement db={db} setDb={setDb} showToast={showToast} />}
-        {activeTab === 'data' && <DataManagement db={db} setDb={setDb} showToast={showToast} />}
+        {activeTab === 'classes' && <ClassManagement db={db} setDb={updateDatabase} showToast={showToast} />}
+        {activeTab === 'data' && <DataManagement db={db} setDb={updateDatabase} showToast={showToast} />}
         {activeTab === 'results' && <ResultManagement db={db} showToast={showToast} />}
       </main>
 
