@@ -2405,65 +2405,98 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Khởi tạo db có nhớ lại dữ liệu cũ từ bộ nhớ trình duyệt
-  const [db, setDb] = useState(() => {
-    const saved = localStorage.getItem('vat_ly_thay_huynh_db');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return {
-      grades: [
-        { id: 'g10', name: 'Khối 10' },
-        { id: 'g11', name: 'Khối 11' },
-        { id: 'g12', name: 'Khối 12' },
-      ],
-      classes: [
-        { id: 'c1', gradeId: 'g12', name: '12A1' },
-        { id: 'c2', gradeId: 'g12', name: '12A2' },
-        { id: 'c3', gradeId: 'g11', name: '11A1' },
-      ],
-      studentsList: [
-        { id: 's1', classId: 'c1', name: 'Nguyễn Văn An', gender: 'Nam', phone: '0901234567', email: 'an@gmail.com', done: 2 },
-        { id: 's2', classId: 'c1', name: 'Trần Thị Bình', gender: 'Nữ', phone: '0907654321', email: 'binh@gmail.com', done: 1 },
-      ],
-      chapters: [
-        { id: 'ch12_1', gradeId: 'g12', name: 'Chương I. Vật lí nhiệt' },
-        { id: 'ch12_2', gradeId: 'g12', name: 'Chương II. Khí lí tưởng' },
-      ],
-      lessons: [
-        { id: 'l12_1', chapterId: 'ch12_1', name: 'Bài 1. Cấu trúc của chất. Sự chuyển thể' },
-        { id: 'l12_2', chapterId: 'ch12_1', name: 'Bài 2. Nội năng. Định luật I của nhiệt động lực học' },
-      ],
-      materials: [
-        {
-          id: 'm1',
-          lessonId: 'l12_1',
-          type: 'theory',
-          name: 'Tài liệu SGK Vật lí 12 - Bài 1',
-          link: 'https://vietjack.com'
-        },
-        {
-          id: 'm2',
-          lessonId: 'l12_1',
-          type: 'quiz',
-          name: 'Đề kiểm tra 15 phút - Bài 1',
-          quizConfig: { time: 15, attempts: 2, answerLink: 'https://youtube.com', sectionScores: { multiScore: 4, tfScore: 3, numScore: 3 } },
-          assignedClassIds: [],
-          questions: [
-            {
-              id: 'q1',
-              type: 'multi',
-              content: 'Công thức tính độ dịch chuyển trong dao động điều hòa là $x = A \\cos(\\omega t + \\varphi)$. Biên độ $A$ có đơn vị là:',
-              options: ['mét (m)', 'giây (s)', 'hertz (Hz)', 'radian (rad)'],
-              answerMCQ: 'A'
-            }
-          ]
-        }
-      ],
-      quizAttempts: []
-    };
-  });
+ // Dữ liệu mẫu mặc định ban đầu nếu trên đám mây chưa có gì
+  const defaultDbData = {
+    grades: [
+      { id: 'g10', name: 'Khối 10' },
+      { id: 'g11', name: 'Khối 11' },
+      { id: 'g12', name: 'Khối 12' },
+    ],
+    classes: [
+      { id: 'c1', gradeId: 'g12', name: '12A1' },
+      { id: 'c2', gradeId: 'g12', name: '12A2' },
+      { id: 'c3', gradeId: 'g11', name: '11A1' },
+    ],
+    studentsList: [
+      { id: 's1', classId: 'c1', name: 'Nguyễn Văn An', gender: 'Nam', phone: '0901234567', email: 'an@gmail.com', done: 2 },
+      { id: 's2', classId: 'c1', name: 'Trần Thị Bình', gender: 'Nữ', phone: '0907654321', email: 'binh@gmail.com', done: 1 },
+    ],
+    chapters: [
+      { id: 'ch12_1', gradeId: 'g12', name: 'Chương I. Vật lí nhiệt' },
+      { id: 'ch12_2', gradeId: 'g12', name: 'Chương II. Khí lí tưởng' },
+    ],
+    lessons: [
+      { id: 'l12_1', chapterId: 'ch12_1', name: 'Bài 1. Cấu trúc của chất. Sự chuyển thể' },
+      { id: 'l12_2', chapterId: 'ch12_1', name: 'Bài 2. Nội năng. Định luật I của nhiệt động lực học' },
+    ],
+    materials: [
+      {
+        id: 'm1',
+        lessonId: 'l12_1',
+        type: 'theory',
+        name: 'Tài liệu SGK Vật lí 12 - Bài 1',
+        link: 'https://vietjack.com'
+      },
+      {
+        id: 'm2',
+        lessonId: 'l12_1',
+        type: 'quiz',
+        name: 'Đề kiểm tra 15 phút - Bài 1',
+        quizConfig: { time: 15, attempts: 2, answerLink: 'https://youtube.com', sectionScores: { multiScore: 4, tfScore: 3, numScore: 3 } },
+        assignedClassIds: [],
+        questions: [
+          {
+            id: 'q1',
+            type: 'multi',
+            content: 'Công thức tính độ dịch chuyển trong dao động điều hòa là $x = A \\cos(\\omega t + \\varphi)$. Biên độ $A$ có đơn vị là:',
+            options: ['mét (m)', 'giây (s)', 'hertz (Hz)', 'radian (rad)'],
+            answerMCQ: 'A'
+          }
+        ]
+      }
+    ],
+    quizAttempts: []
+  };
 
+  const [db, setDb] = useState(defaultDbData);
+
+  // Lắng nghe dữ liệu thời gian thực từ Firebase Firestore (Đồng bộ đa thiết bị)
+  useEffect(() => {
+    const docRef = doc(firestoreDb, 'schoolData', 'mainDatabase');
+
+    const unsubscribe = onSnapshot(docRef, async (docSnap) => {
+      if (docSnap.exists()) {
+        setDb(docSnap.data());
+      } else {
+        await setDoc(docRef, defaultDbData);
+        setDb(defaultDbData);
+      }
+    }, (error) => {
+      console.error("Lỗi đọc dữ liệu từ Firebase: ", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Hàm cập nhật dữ liệu đẩy lên đám mây
+  const updateDatabase = async (newDbOrUpdater) => {
+    let updatedData;
+    if (typeof newDbOrUpdater === 'function') {
+      updatedData = newDbOrUpdater(db);
+    } else {
+      updatedData = newDbOrUpdater;
+    }
+
+    setDb(updatedData); // Cập nhật giao diện ngay lập tức
+    
+    try {
+      const docRef = doc(firestoreDb, 'schoolData', 'mainDatabase');
+      await setDoc(docRef, updatedData); // Lưu lên Firebase
+    } catch (error) {
+      console.error("Lỗi lưu dữ liệu lên Firebase: ", error);
+      showToast("Lỗi đồng bộ dữ liệu lên máy chủ!");
+    }
+  };
   // Tự động ghi lại vào localStorage mỗi khi db thay đổi
   useEffect(() => {
     if (db) {
