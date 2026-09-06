@@ -2462,7 +2462,7 @@ export default function App() {
 
   // Lắng nghe dữ liệu thời gian thực từ Firebase Firestore (Đồng bộ đa thiết bị)
   useEffect(() => {
-    const docRef = doc(firestoreDb, 'schoolData', 'mainDatabase');
+    const docRef = doc(firestoreDb, 'appData', 'mainDB');
 
     const unsubscribe = onSnapshot(docRef, async (docSnap) => {
       if (docSnap.exists()) {
@@ -2490,7 +2490,7 @@ export default function App() {
     setDb(updatedData); // Cập nhật giao diện ngay lập tức
     
     try {
-      const docRef = doc(firestoreDb, 'schoolData', 'mainDatabase');
+      const docRef = doc(firestoreDb, 'appData', 'mainDB');
       await setDoc(docRef, updatedData); // Lưu lên Firebase
     } catch (error) {
       console.error("Lỗi lưu dữ liệu lên Firebase: ", error);
