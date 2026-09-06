@@ -701,7 +701,8 @@ function StudentDashboard({ currentUser, db, setDb, showToast, onLogout }) {
 }
 // ==========================================
 // ==========================================
-// 7b. Quiz Player Sub-component
+// ==========================================
+// 7b. Quiz Player Sub-component (Bản gốc chưa tích hợp KaTeX)
 // ==========================================
 function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
   const [timeLeft, setTimeLeft] = useState((quiz.quizConfig?.time || 45) * 60);
@@ -836,110 +837,118 @@ function QuizPlayer({ quiz, currentUser, db, setDb, showToast, onFinish }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <div className="bg-white border-b px-4 py-3 space-y-2 sticky top-0 z-20 shadow-sm">
-        <div className="flex justify-between items-center">
-          <h1 className="text-sm font-bold text-gray-800 truncate flex-1 pr-2">{quiz.name}</h1>
-          <span className="text-xs text-gray-500 shrink-0">HS: <strong className="text-gray-700">{currentUser?.name || 'Học sinh'}</strong></span>
+    <div className="p-4 md:p-8 max-w-4xl mx-auto">
+      {/* HEADER BÀI LÀM */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-4 z-10">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">{quiz.name}</h2>
+          <p className="text-sm text-gray-500">Học sinh: <span className="font-medium text-gray-700">{currentUser?.name}</span></p>
         </div>
-
-        <div className="flex justify-between items-center pt-1 border-t border-gray-100">
-          <div className={`flex items-center gap-1.5 font-bold text-xs px-2.5 py-1 rounded border ${timeLeft <= 300 ? 'bg-red-50 border-red-200 text-red-600 animate-pulse' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
-            <Clock size={14}/>
+        <div className="flex items-center gap-4">
+          <div className={`flex items-center gap-2 font-bold px-4 py-2 rounded-lg border ${timeLeft <= 300 ? 'bg-red-50 border-red-200 text-red-600 animate-pulse' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
+            <Clock size={18}/>
             <span>Thời gian: {formatTime(timeLeft)}</span>
           </div>
-          
           <button 
             onClick={() => setShowConfirmModal(true)} 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded font-medium text-xs shadow-sm transition-colors"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium shadow-sm transition-colors"
           >
             Nộp bài
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-8">
-         <div className="max-w-4xl mx-auto">
-            {!quiz.questions || quiz.questions.length === 0 ? (
-               <div className="bg-white p-8 rounded shadow text-center text-gray-500">
-                  Đề chưa có câu hỏi nào.
-               </div>
-            ) : (
-               quiz.questions.map((q, index) => (
-                  <div key={q.id} className="mb-6 p-6 bg-white rounded-lg shadow-sm border border-gray-200">
-                     <h4 className="font-bold text-lg mb-4 text-blue-900 border-b pb-2">Câu {index + 1}:</h4>
-                     <div className="mb-4 text-gray-800 whitespace-pre-wrap">{renderMathContent(q.content)}</div>
-                     {q.imageLink && (
-                        <a href={q.imageLink} target="_blank" rel="noreferrer" className="text-blue-500 underline mb-4 inline-block font-medium">
-                            Click để xem hình ảnh đính kèm
-                        </a>
-                     )}
+      {/* DANH SÁCH CÂU HỎI */}
+      <div className="space-y-6">
+        {!quiz.questions || quiz.questions.length === 0 ? (
+           <div className="bg-white p-8 rounded shadow text-center text-gray-500">
+              Đề chưa có câu hỏi nào.
+           </div>
+        ) : (
+           quiz.questions.map((q, index) => (
+              <div key={q.id} className="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+                 <h4 className="font-bold text-lg mb-4 text-blue-900 border-b pb-2">Câu {index + 1}:</h4>
+                 <div className="mb-4 text-gray-800 whitespace-pre-wrap">{q.content}</div>
+                 {q.imageLink && (
+                    <a href={q.imageLink} target="_blank" rel="noreferrer" className="text-blue-500 underline mb-4 inline-block font-medium">
+                        Click để xem hình ảnh đính kèm
+                    </a>
+                 )}
 
-                     {(q.type === 'multi' || !q.type) && (
-                        <div className="space-y-3 mt-4">
-                           {['A', 'B', 'C', 'D'].map((opt, optIdx) => {
-                              const optionText = q.options && q.options[optIdx] ? q.options[optIdx] : `Đáp án ${opt}`;
-                              const isSelected = answers[q.id] === opt;
-                              return (
-                                 <label 
-                                    key={opt} 
-                                    className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
-                                       isSelected ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                                    }`}
-                                 >
-                                    <input 
-                                       type="radio" 
-                                       name={`ans_${q.id}`} 
-                                       checked={isSelected} 
-                                       onChange={() => handleAnswerChange(q.id, opt)}
-                                       className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <div className="flex-1 flex gap-2">
-                                       <span className={`font-bold ${isSelected ? 'text-blue-700' : 'text-gray-700'}`}>{opt}.</span>
-                                       <span className={`text-sm ${isSelected ? 'text-blue-900 font-medium' : 'text-gray-800'}`}>
-                                          {renderMathContent(optionText)}
-                                       </span>
-                                    </div>
-                                 </label>
-                              );
-                           })}
-                        </div>
-                     )}
+                 {/* TRẮC NGHIỆM THƯỜNG */}
+                 {(q.type === 'multi' || !q.type) && (
+                    <div className="space-y-3 mt-4">
+                       {['A', 'B', 'C', 'D'].map((opt, optIdx) => {
+                          const optionText = q.options && q.options[optIdx] ? q.options[optIdx] : `Đáp án ${opt}`;
+                          const isSelected = answers[q.id] === opt;
+                          return (
+                             <label 
+                                key={opt} 
+                                className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
+                                   isSelected ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
+                                }`}
+                             >
+                                <input 
+                                   type="radio" 
+                                   name={`ans_${q.id}`} 
+                                   checked={isSelected} 
+                                   onChange={() => handleAnswerChange(q.id, opt)}
+                                   className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                                />
+                                <div className="flex-1 flex gap-2">
+                                   <span className={`font-bold ${isSelected ? 'text-blue-700' : 'text-gray-700'}`}>{opt}.</span>
+                                   <span className={`text-sm ${isSelected ? 'text-blue-900 font-medium' : 'text-gray-800'}`}>
+                                      {optionText}
+                                   </span>
+                                </div>
+                             </label>
+                          );
+                       })}
+                    </div>
+                 )}
 
-                     {q.type === 'truefalse' && (
-                        <div className="space-y-4 mt-4">
-                           <p className="text-sm text-gray-500 mb-2 italic">Chọn Đúng hoặc Sai cho mỗi phát biểu dưới đây:</p>
-                           {(q.tfStatements || []).map((stmt, sIdx) => (
-                              <div key={sIdx} className="p-4 border rounded bg-gray-50 flex flex-col md:flex-row gap-4 justify-between md:items-center">
-                                 <div className="font-medium text-gray-800 flex-1">
-                                    <span className="font-bold mr-2">{['a', 'b', 'c', 'd'][sIdx]}.</span> {renderMathContent(stmt.text)}
-                                 </div>
-                                 <div className="flex gap-4 min-w-[140px]">
-                                    <label className={`flex items-center gap-2 cursor-pointer px-3 py-1 rounded border ${answers[q.id]?.[sIdx] === true ? 'bg-green-100 border-green-500' : 'bg-white'}`}>
-                                       <input type="radio" name={`tf_${q.id}_${sIdx}`} checked={answers[q.id]?.[sIdx] === true} onChange={() => handleTFChange(q.id, sIdx, true)} className="accent-green-600" />
-                                       <span className="text-sm font-bold text-green-700">Đúng</span>
-                                    </label>
-                                    <label className={`flex items-center gap-2 cursor-pointer px-3 py-1 rounded border ${answers[q.id]?.[sIdx] === false ? 'bg-red-100 border-red-500' : 'bg-white'}`}>
-                                       <input type="radio" name={`tf_${q.id}_${sIdx}`} checked={answers[q.id]?.[sIdx] === false} onChange={() => handleTFChange(q.id, sIdx, false)} className="accent-red-600" />
-                                       <span className="text-sm font-bold text-red-700">Sai</span>
-                                    </label>
-                                 </div>
-                              </div>
-                           ))}
-                        </div>
-                     )}
+                 {/* ĐÚNG SAI */}
+                 {q.type === 'truefalse' && (
+                    <div className="space-y-4 mt-4">
+                       <p className="text-sm text-gray-500 mb-2 italic">Chọn Đúng hoặc Sai cho mỗi phát biểu dưới đây:</p>
+                       {(q.tfStatements || []).map((stmt, sIdx) => (
+                          <div key={sIdx} className="p-4 border rounded bg-gray-50 flex flex-col md:flex-row gap-4 justify-between md:items-center">
+                             <div className="font-medium text-gray-800 flex-1">
+                                <span className="font-bold mr-2">{['a', 'b', 'c', 'd'][sIdx]}.</span> {stmt.text}
+                             </div>
+                             <div className="flex gap-4 min-w-[140px]">
+                                <label className={`flex items-center gap-2 cursor-pointer px-3 py-1 rounded border ${answers[q.id]?.[sIdx] === true ? 'bg-green-100 border-green-500' : 'bg-white'}`}>
+                                   <input type="radio" name={`tf_${q.id}_${sIdx}`} checked={answers[q.id]?.[sIdx] === true} onChange={() => handleTFChange(q.id, sIdx, true)} className="accent-green-600" />
+                                   <span className="text-sm font-bold text-green-700">Đúng</span>
+                                </label>
+                                <label className={`flex items-center gap-2 cursor-pointer px-3 py-1 rounded border ${answers[q.id]?.[sIdx] === false ? 'bg-red-100 border-red-500' : 'bg-white'}`}>
+                                   <input type="radio" name={`tf_${q.id}_${sIdx}`} checked={answers[q.id]?.[sIdx] === false} onChange={() => handleTFChange(q.id, sIdx, false)} className="accent-red-600" />
+                                   <span className="text-sm font-bold text-red-700">Sai</span>
+                                </label>
+                             </div>
+                          </div>
+                       ))}
+                    </div>
+                 )}
 
-                     {(q.type === 'short' || q.type === 'number') && (
-                        <div className="mt-4">
-                           <input type="text" placeholder="Nhập câu trả lời của bạn..." className="w-full p-4 border rounded font-medium focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-800" value={answers[q.id] || ''} onChange={(e) => handleAnswerChange(q.id, e.target.value)} />
-                        </div>
-                     )}
-                  </div>
-               ))
-            )}
-         </div>
+                 {/* TRẢ LỜI NGẮN / ĐIỀN SỐ */}
+                 {(q.type === 'short' || q.type === 'number') && (
+                    <div className="mt-4">
+                       <input 
+                          type="text" 
+                          placeholder="Nhập câu trả lời của bạn..." 
+                          className="w-full p-4 border rounded font-medium focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-800" 
+                          value={answers[q.id] || ''} 
+                          onChange={(e) => handleAnswerChange(q.id, e.target.value)} 
+                       />
+                    </div>
+                 )}
+              </div>
+           ))
+        )}
       </div>
 
+      {/* MODAL XÁC NHẬN NỘP BÀI */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-sm text-center shadow-2xl">
