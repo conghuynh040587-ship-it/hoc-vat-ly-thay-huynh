@@ -2498,11 +2498,7 @@ export default function App() {
     }
   };
   // Tự động ghi lại vào localStorage mỗi khi db thay đổi
-  useEffect(() => {
-    if (db) {
-      localStorage.setItem('vat_ly_thay_huynh_db', JSON.stringify(db));
-    }
-  }, [db]);
+
 
   const handleLoginSuccess = (userData) => {
     setCurrentUser(userData);
