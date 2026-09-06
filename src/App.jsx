@@ -351,6 +351,7 @@ function StudentLinkProfile({ currentUser, db, onConfirmLink, onLogout }) {
 }
 
 /**
+/**
  * ==========================================
  * MODULE: DASHBOARD HỌC SINH (StudentDashboard.jsx)
  * Chức năng: Hiển thị giao diện học tập chính, mục lục bài học và lọc học liệu theo lớp được phân công.
@@ -368,7 +369,8 @@ function StudentDashboard({ currentUser, db, onLogout, onStartQuiz }) {
 
   const currentStudent = db.studentsList?.find(s => s.id === currentUser?.linkedStudentId);
   const studentClassId = currentUser?.classId || currentStudent?.classId;
-// === (1) TỰ ĐỘNG XÁC ĐỊNH KHỐI CỦA HỌC SINH ĐANG ĐĂNG NHẬP ===
+  
+  // === (1) TỰ ĐỘNG XÁC ĐỊNH KHỐI CỦA HỌC SINH ĐANG ĐĂNG NHẬP ===
   const studentClass = db.classes?.find(c => c.id === studentClassId);
   const studentGradeId = studentClass?.gradeId; // Lấy ra id khối (VD: 'g10', 'g11', 'g12')
 
@@ -377,6 +379,7 @@ function StudentDashboard({ currentUser, db, onLogout, onStartQuiz }) {
     if (!studentGradeId) return true; // Phòng hờ nếu chưa rõ lớp thì hiện tất cả
     return chap.gradeId === studentGradeId;
   });
+
   // Lọc học liệu: Đề kiểm tra (quiz) phải thuộc diện được giao chung HOẶC giao riêng cho lớp của học sinh
   const availableMaterials = (db.materials || []).filter(mat => {
     if (mat.lessonId !== selectedLesson) return false;
@@ -457,7 +460,7 @@ function StudentDashboard({ currentUser, db, onLogout, onStartQuiz }) {
           
           <div className="p-4">
             <h3 className="font-bold text-gray-800 mb-4 pb-2 border-b-2 border-blue-100 hidden md:block">CHƯƠNG TRÌNH HỌC</h3>
-            {db.chapters?.map(chap => {
+            {filteredChapters.map(chap => {
               const lessons = db.lessons?.filter(l => l.chapterId === chap.id) || [];
               const isOpen = expandedChapters[chap.id];
               return (
@@ -597,7 +600,6 @@ function StudentDashboard({ currentUser, db, onLogout, onStartQuiz }) {
     </div>
   );
 }
-
 /**
  * ==========================================
  * MODULE: GIAO DIỆN LÀM BÀI VÀ XEM LẠI (QuizPlayer.jsx)
