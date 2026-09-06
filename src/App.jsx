@@ -368,7 +368,15 @@ function StudentDashboard({ currentUser, db, onLogout, onStartQuiz }) {
 
   const currentStudent = db.studentsList?.find(s => s.id === currentUser?.linkedStudentId);
   const studentClassId = currentUser?.classId || currentStudent?.classId;
+// === (1) TỰ ĐỘNG XÁC ĐỊNH KHỐI CỦA HỌC SINH ĐANG ĐĂNG NHẬP ===
+  const studentClass = db.classes?.find(c => c.id === studentClassId);
+  const studentGradeId = studentClass?.gradeId; // Lấy ra id khối (VD: 'g10', 'g11', 'g12')
 
+  // === (2) LỌC CHỈ LẤY CÁC CHƯƠNG THUỘC ĐÚNG KHỐI ĐÓ ===
+  const filteredChapters = (db.chapters || []).filter(chap => {
+    if (!studentGradeId) return true; // Phòng hờ nếu chưa rõ lớp thì hiện tất cả
+    return chap.gradeId === studentGradeId;
+  });
   // Lọc học liệu: Đề kiểm tra (quiz) phải thuộc diện được giao chung HOẶC giao riêng cho lớp của học sinh
   const availableMaterials = (db.materials || []).filter(mat => {
     if (mat.lessonId !== selectedLesson) return false;
