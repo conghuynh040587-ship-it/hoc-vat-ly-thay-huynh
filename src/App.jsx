@@ -8,23 +8,29 @@
  */
 import React, { useState, useEffect } from 'react';
 import { User, Lock, Phone, Mail, GraduationCap, ShieldCheck, LogOut, BookOpen, ChevronRight, ChevronDown, FileText, Video, FileQuestion, Clock, School, Users, UserCheck, AlertCircle, CheckCircle, Database, Plus, Trash2, Edit, FileSpreadsheet, ArrowLeft, Save, Image as ImageIcon, Link as LinkIcon, Sliders, Eye, BarChart2, Filter, Calendar, Award, Share2 } from 'lucide-react';
-import katex from 'katex';
-import 'katex/dist/katex.min.css';
 import * as XLSX from 'xlsx';
 
 // ==========================================
-// HÀM HỖ TRỢ: XỬ LÝ CÔNG THỨC MATHTYPE / LATEX
+// HÀM HỖ TRỢ: XỬ LÝ CÔNG THỨC MATHTYPE / LATEX (Dùng CDN KaTeX toàn cục)
 // ==========================================
 const renderMathContent = (text) => {
   if (!text) return '';
   try {
     let processed = String(text).replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
-      try { return katex.renderToString(formula, { displayMode: true, throwOnError: false }); } 
-      catch (e) { return match; }
+      try { 
+        if (window.katex) {
+          return window.katex.renderToString(formula, { displayMode: true, throwOnError: false }); 
+        }
+      } catch (e) {}
+      return match;
     });
     processed = processed.replace(/\$([\s\S]*?)\$/g, (match, formula) => {
-      try { return katex.renderToString(formula, { displayMode: false, throwOnError: false }); } 
-      catch (e) { return match; }
+      try { 
+        if (window.katex) {
+          return window.katex.renderToString(formula, { displayMode: false, throwOnError: false }); 
+        }
+      } catch (e) {}
+      return match;
     });
     return <span dangerouslySetInnerHTML={{ __html: processed }} />;
   } catch (err) {
@@ -35,6 +41,7 @@ const renderMathContent = (text) => {
 /**
  * ==========================================
  * MODULE: XÁC THỰC NGƯỜI DÙNG (Auth.jsx)
+ * Chức năng: Đăng nhập/Đăng ký dành cho Học sinh và Quản trị viên.
  * ==========================================
  */
 function Auth({ onLoginSuccess }) {
@@ -206,6 +213,7 @@ function Auth({ onLoginSuccess }) {
 /**
  * ==========================================
  * MODULE: XÁC THỰC HỒ SƠ HỌC SINH (StudentLinkProfile.jsx)
+ * Chức năng: Ép buộc học sinh chọn Khối -> Lớp -> Tên đúng với danh sách gốc.
  * ==========================================
  */
 function StudentLinkProfile({ currentUser, db, onConfirmLink, onLogout }) {
@@ -345,6 +353,7 @@ function StudentLinkProfile({ currentUser, db, onConfirmLink, onLogout }) {
 /**
  * ==========================================
  * MODULE: DASHBOARD HỌC SINH (StudentDashboard.jsx)
+ * Chức năng: Hiển thị giao diện học tập chính, mục lục bài học và lọc học liệu theo lớp được phân công.
  * ==========================================
  */
 function StudentDashboard({ currentUser, db, onLogout, onStartQuiz }) {
@@ -360,7 +369,7 @@ function StudentDashboard({ currentUser, db, onLogout, onStartQuiz }) {
   const currentStudent = db.studentsList?.find(s => s.id === currentUser?.linkedStudentId);
   const studentClassId = currentUser?.classId || currentStudent?.classId;
 
-  // Lọc các học liệu hiển thị theo phân quyền giao bài
+  // Lọc học liệu: Đề kiểm tra (quiz) phải thuộc diện được giao chung HOẶC giao riêng cho lớp của học sinh
   const availableMaterials = (db.materials || []).filter(mat => {
     if (mat.lessonId !== selectedLesson) return false;
     if (mat.type === 'theory' || mat.type === 'video') return true;
@@ -583,7 +592,8 @@ function StudentDashboard({ currentUser, db, onLogout, onStartQuiz }) {
 
 /**
  * ==========================================
- * MODULE: GIAO DIỆN LÀM BÀI VÀ XEM LẠI CỦA HỌC SINH (QuizPlayer.jsx)
+ * MODULE: GIAO DIỆN LÀM BÀI VÀ XEM LẠI (QuizPlayer.jsx)
+ * Chức năng: Phòng làm bài trắc nghiệm, đếm ngược, render KaTeX và thuật toán chấm điểm chuẩn Đại học.
  * ==========================================
  */
 function QuizPlayer({ quiz, currentUser, onFinish, onSaveResult }) {
@@ -920,7 +930,8 @@ function QuizPlayer({ quiz, currentUser, onFinish, onSaveResult }) {
 
 /**
  * ==========================================
- * MODULE: SOẠN CÂU HỎI VÀ CẤU HÌNH ĐIỂM (QuizEditor.jsx)
+ * MODULE: SOẠN CÂU HỎI & CẤU HÌNH ĐIỂM (QuizEditor.jsx)
+ * Chức năng: Giáo viên biên tập câu hỏi trắc nghiệm và cấu hình phân bổ điểm.
  * ==========================================
  */
 function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
@@ -1227,6 +1238,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
 /**
  * ==========================================
  * MODULE: QUẢN LÝ LỚP & HỌC SINH (ClassManagement.jsx)
+ * Chức năng: Thêm/Sửa/Xóa lớp, Thêm học sinh thủ công hoặc Import Excel.
  * ==========================================
  */
 function ClassManagement({ db, setDb, showToast }) {
@@ -1630,7 +1642,7 @@ function ClassManagement({ db, setDb, showToast }) {
                 <input 
                   required 
                   type="text" 
-                  placeholder="Nhập họ tên học sinh"
+                  placeholder="VD: Nguyễn Văn A" 
                   className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
                   value={manualStudent.name} 
                   onChange={e => setManualStudent({ ...manualStudent, name: e.target.value })} 
@@ -1650,8 +1662,8 @@ function ClassManagement({ db, setDb, showToast }) {
               <div>
                 <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Số điện thoại</label>
                 <input 
-                  type="text" 
-                  placeholder="Số điện thoại liên hệ"
+                  type="tel" 
+                  placeholder="VD: 0901234567" 
                   className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
                   value={manualStudent.phone} 
                   onChange={e => setManualStudent({ ...manualStudent, phone: e.target.value })} 
@@ -1661,7 +1673,7 @@ function ClassManagement({ db, setDb, showToast }) {
                 <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Email</label>
                 <input 
                   type="email" 
-                  placeholder="Địa chỉ email (nếu có)"
+                  placeholder="VD: email@gmail.com" 
                   className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
                   value={manualStudent.email} 
                   onChange={e => setManualStudent({ ...manualStudent, email: e.target.value })} 
@@ -1684,7 +1696,7 @@ function ClassManagement({ db, setDb, showToast }) {
             
             <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm mb-4 space-y-2">
               <p className="font-bold text-blue-900 text-xs uppercase tracking-wider">Cấu trúc file Excel yêu cầu:</p>
-              <p className="text-blue-800 text-xs">Các cột cần đúng tên: <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-bold">Họ và tên | Giới tính | Số điện thoại | Email</code></p>
+              <p className="text-blue-800 text-xs">Các cột trong file cần đặt tên chính xác: <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-bold">Họ và tên</code> | <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-bold">Giới tính</code> | <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-bold">Số điện thoại</code> | <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-bold">Email</code></p>
               <button 
                 type="button" 
                 onClick={downloadTemplate}
@@ -1722,9 +1734,10 @@ function ClassManagement({ db, setDb, showToast }) {
 /**
  * ==========================================
  * MODULE: QUẢN LÝ HỌC LIỆU & ĐỀ THI (DataManagement.jsx)
+ * Chức năng: Quản lý thư mục Chương/Bài, Gắn học liệu và Phân quyền giao bài cho lớp.
  * ==========================================
  */
-function DataManagement({ db, setDb, showToast, onOpenQuizEditor }) {
+function DataManagement({ db, setDb, showToast }) {
   const [selectedGrade, setSelectedGrade] = useState(null);
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [selectedLesson, setSelectedLesson] = useState(null);
@@ -1732,7 +1745,6 @@ function DataManagement({ db, setDb, showToast, onOpenQuizEditor }) {
   const [showAddChapter, setShowAddChapter] = useState(false);
   const [showAddLesson, setShowAddLesson] = useState(false);
   const [showAddMaterial, setShowAddMaterial] = useState(false);
-  
   const [assigningQuizId, setAssigningQuizId] = useState(null);
 
   const [newChapterName, setNewChapterName] = useState('');
@@ -1740,6 +1752,7 @@ function DataManagement({ db, setDb, showToast, onOpenQuizEditor }) {
   
   const [matForm, setMatForm] = useState({ name: '', type: 'theory', link: '' });
   const [quizConfig, setQuizConfig] = useState({ type: 'multi', time: 45, attempts: 1, answerLink: '' });
+  const [editingQuizId, setEditingQuizId] = useState(null);
 
   const handleAddChapter = (e) => {
     e.preventDefault();
@@ -1747,7 +1760,6 @@ function DataManagement({ db, setDb, showToast, onOpenQuizEditor }) {
 
     const newChap = { id: `ch${Date.now()}`, gradeId: selectedGrade, name: newChapterName.trim() };
     setDb({ ...db, chapters: [...db.chapters, newChap] });
-    
     setShowAddChapter(false);
     setNewChapterName('');
     showToast('Thêm chương học thành công!');
@@ -1777,7 +1789,6 @@ function DataManagement({ db, setDb, showToast, onOpenQuizEditor }) {
 
     const newLes = { id: `l${Date.now()}`, chapterId: selectedChapter, name: newLessonName.trim() };
     setDb({ ...db, lessons: [...db.lessons, newLes] });
-    
     setShowAddLesson(false);
     setNewLessonName('');
     showToast('Thêm bài học thành công!');
@@ -1812,8 +1823,8 @@ function DataManagement({ db, setDb, showToast, onOpenQuizEditor }) {
       lessonId: selectedLesson,
       ...matForm,
       quizConfig: matForm.type === 'quiz' ? quizConfig : null,
-      assignedClassIds: [], 
-      questions: []
+      questions: [],
+      assignedClassIds: []
     };
 
     setDb({ ...db, materials: [...db.materials, newMat] });
@@ -1822,7 +1833,7 @@ function DataManagement({ db, setDb, showToast, onOpenQuizEditor }) {
     showToast('Gắn học liệu thành công!');
 
     if (matForm.type === 'quiz') {
-      onOpenQuizEditor(newMatId);
+      setEditingQuizId(newMatId);
     }
   };
 
@@ -1835,8 +1846,11 @@ function DataManagement({ db, setDb, showToast, onOpenQuizEditor }) {
     });
     setDb({ ...db, materials: updatedMaterials });
     if (showToast) showToast('Đã cập nhật phân quyền giao bài cho lớp thành công!');
-    setAssigningQuizId(null);
   };
+
+  if (editingQuizId) {
+    return <QuizEditor db={db} setDb={setDb} quizId={editingQuizId} onClose={() => setEditingQuizId(null)} showToast={showToast} />;
+  }
 
   return (
     <div className="h-full flex flex-col md:flex-row bg-white">
@@ -1950,31 +1964,28 @@ function DataManagement({ db, setDb, showToast, onOpenQuizEditor }) {
                     </h3>
                     <ul className="space-y-2">
                       {mats.map(m => (
-                        <li key={m.id} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200 gap-3">
-                          <div className="flex-1">
+                        <li key={m.id} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+                          <div>
                             <span className="font-bold text-gray-800 text-sm">{m.name}</span>
                             {m.type === 'quiz' && m.quizConfig && (
-                              <div className="text-xs text-gray-500 mt-0.5 font-medium flex items-center gap-3">
+                              <div className="text-xs text-gray-500 mt-0.5 font-medium flex items-center gap-2">
                                 <span>⏱️ {m.quizConfig.time} phút</span>
                                 <span>🔄 Tối đa {m.quizConfig.attempts} lần</span>
-                                <span className="text-blue-600 font-bold">
-                                  {(!m.assignedClassIds || m.assignedClassIds.length === 0) ? '🌐 Giao tất cả các lớp' : `🎯 Giao cho ${m.assignedClassIds.length} lớp`}
-                                </span>
+                                <span className="text-blue-600 font-bold">({m.assignedClassIds?.length > 0 ? `Đã giao ${m.assignedClassIds.length} lớp` : 'Giao tất cả các lớp'})</span>
                               </div>
                             )}
                           </div>
-                          <div className="flex gap-2 shrink-0">
+                          <div className="flex gap-2">
                             {m.type === 'quiz' && (
                               <>
                                 <button 
-                                  onClick={() => setAssigningQuizId(m.id)}
-                                  className="text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1"
-                                  title="Phân công giao bài cho các lớp"
+                                  onClick={() => setAssigningQuizId(m.id)} 
+                                  className="text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
                                 >
-                                  <Share2 size={13}/> Giao lớp
+                                  Giao lớp
                                 </button>
                                 <button 
-                                  onClick={() => onOpenQuizEditor(m.id)} 
+                                  onClick={() => setEditingQuizId(m.id)} 
                                   className="text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
                                 >
                                   Soạn câu hỏi
@@ -2003,52 +2014,6 @@ function DataManagement({ db, setDb, showToast, onOpenQuizEditor }) {
           </div>
         )}
       </div>
-
-      {assigningQuizId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl space-y-4">
-            <h3 className="font-bold text-lg text-gray-900">Phân công giao bài cho các lớp</h3>
-            <p className="text-xs text-gray-500">Chọn những lớp được phép làm bài kiểm tra này:</p>
-            
-            <div className="space-y-2 max-h-60 overflow-y-auto border p-3 rounded-xl bg-gray-50">
-              {db.classes?.map(c => {
-                const currentQuiz = db.materials.find(m => m.id === assigningQuizId);
-                const isChecked = currentQuiz?.assignedClassIds?.includes(c.id) || false;
-
-                return (
-                  <label key={c.id} className="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-200 cursor-pointer hover:bg-blue-50 transition-colors">
-                    <input 
-                      type="checkbox" 
-                      defaultChecked={isChecked}
-                      onChange={(e) => {
-                        const currentList = currentQuiz?.assignedClassIds || [];
-                        let newList = [];
-                        if (e.target.checked) {
-                          newList = [...currentList, c.id];
-                        } else {
-                          newList = currentList.filter(id => id !== c.id);
-                        }
-                        handleSaveAssignment(assigningQuizId, newList);
-                      }}
-                      className="w-4 h-4 text-blue-600 rounded"
-                    />
-                    <span className="font-bold text-sm text-gray-800">{c.name}</span>
-                  </label>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button 
-                onClick={() => setAssigningQuizId(null)} 
-                className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-sm hover:bg-gray-200"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showAddChapter && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
@@ -2185,13 +2150,60 @@ function DataManagement({ db, setDb, showToast, onOpenQuizEditor }) {
           </div>
         </div>
       )}
+
+      {assigningQuizId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl space-y-4">
+            <h3 className="font-bold text-lg text-gray-900">Phân công giao bài cho các lớp</h3>
+            <p className="text-xs text-gray-500">Chọn những lớp được phép làm bài kiểm tra này (Nếu bỏ chọn tất cả, bài sẽ hiển thị cho mọi lớp):</p>
+            
+            <div className="space-y-2 max-h-60 overflow-y-auto border p-3 rounded-xl bg-gray-50">
+              {db.classes?.map(c => {
+                const currentQuiz = db.materials.find(m => m.id === assigningQuizId);
+                const isChecked = currentQuiz?.assignedClassIds?.includes(c.id) || false;
+
+                return (
+                  <label key={c.id} className="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-200 cursor-pointer hover:bg-blue-50 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      defaultChecked={isChecked}
+                      onChange={(e) => {
+                        const currentList = currentQuiz?.assignedClassIds || [];
+                        let newList = [];
+                        if (e.target.checked) {
+                          newList = [...currentList, c.id];
+                        } else {
+                          newList = currentList.filter(id => id !== c.id);
+                        }
+                        handleSaveAssignment(assigningQuizId, newList);
+                      }}
+                      className="w-4 h-4 text-blue-600 rounded"
+                    />
+                    <span className="font-bold text-sm text-gray-800">{c.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button 
+                onClick={() => setAssigningQuizId(null)} 
+                className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-sm hover:bg-gray-200"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 /**
  * ==========================================
- * MODULE: THỐNG KÊ KẾT QUẢ VÀ ĐIỂM SỐ (ResultManagement.jsx)
+ * MODULE: THỐNG KÊ KẾT QUẢ & ĐIỂM SỐ (ResultManagement.jsx)
+ * Chức năng: Thống kê điểm số học sinh, lọc theo lớp và đề thi, xuất file Excel bảng điểm.
  * ==========================================
  */
 function ResultManagement({ db, showToast }) {
@@ -2215,7 +2227,7 @@ function ResultManagement({ db, showToast }) {
         return matchStudent && matchQuiz;
       }) || [];
 
-      const scoreHistory = attempts.map((att, i) => `Lần ${i+1}: ${att.score}đ (${att.duration || 'N/A'}, ${att.timestamp || 'Mới đây'})`).join(' | ');
+      const scoreHistory = attempts.map((att, i) => `Lần ${i+1}: ${att.score}đ (${att.duration || 'N/A'})`).join(' | ');
       const maxScore = attempts.length > 0 ? Math.max(...attempts.map(a => parseFloat(a.score || 0))) : 0;
 
       return {
@@ -2325,7 +2337,6 @@ function ResultManagement({ db, showToast }) {
                       <td className="p-3.5 text-center text-gray-500 font-medium">{idx + 1}</td>
                       <td className="p-3.5 font-bold text-gray-900">{student.name}</td>
                       <td className="p-3.5 text-gray-600">{student.phone}</td>
-                      
                       <td className="p-3.5">
                         {attempts.length === 0 ? (
                           <span className="text-xs text-gray-400 italic bg-gray-100 px-2.5 py-1 rounded-md">Chưa làm bài</span>
@@ -2369,11 +2380,13 @@ function ResultManagement({ db, showToast }) {
 
 /**
  * ==========================================
- * MODULE: DASHBOARD GIÁO VIÊN (TeacherDashboard.jsx)
+ * MAIN COMPONENT & STATE MANAGEMENT (App.jsx)
  * ==========================================
  */
-function TeacherDashboard({ currentUser, db, setDb, onLogout, editingQuizId, setEditingQuizId }) {
-  const [activeMenu, setActiveMenu] = useState('classes');
+export default function App() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('classes');
+  const [activeQuiz, setActiveQuiz] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (msg) => {
@@ -2381,14 +2394,117 @@ function TeacherDashboard({ currentUser, db, setDb, onLogout, editingQuizId, set
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  if (editingQuizId) {
+  const [db, setDb] = useState({
+    grades: [
+      { id: 'g10', name: 'Khối 10' },
+      { id: 'g11', name: 'Khối 11' },
+      { id: 'g12', name: 'Khối 12' },
+    ],
+    classes: [
+      { id: 'c1', gradeId: 'g12', name: '12A1' },
+      { id: 'c2', gradeId: 'g12', name: '12A2' },
+      { id: 'c3', gradeId: 'g11', name: '11A1' },
+    ],
+    studentsList: [
+      { id: 's1', classId: 'c1', name: 'Nguyễn Văn An', gender: 'Nam', phone: '0901234567', email: 'an@gmail.com', done: 2 },
+      { id: 's2', classId: 'c1', name: 'Trần Thị Bình', gender: 'Nữ', phone: '0907654321', email: 'binh@gmail.com', done: 1 },
+    ],
+    chapters: [
+      { id: 'ch12_1', gradeId: 'g12', name: 'Chương I. Vật lí nhiệt' },
+      { id: 'ch12_2', gradeId: 'g12', name: 'Chương II. Khí lí tưởng' },
+    ],
+    lessons: [
+      { id: 'l12_1', chapterId: 'ch12_1', name: 'Bài 1. Cấu trúc của chất. Sự chuyển thể' },
+      { id: 'l12_2', chapterId: 'ch12_1', name: 'Bài 2. Nội năng. Định luật I của nhiệt động lực học' },
+    ],
+    materials: [
+      {
+        id: 'm1',
+        lessonId: 'l12_1',
+        type: 'theory',
+        name: 'Tài liệu SGK Vật lí 12 - Bài 1',
+        link: 'https://vietjack.com'
+      },
+      {
+        id: 'm2',
+        lessonId: 'l12_1',
+        type: 'quiz',
+        name: 'Đề kiểm tra 15 phút - Bài 1',
+        quizConfig: { time: 15, attempts: 2, answerLink: 'https://youtube.com', sectionScores: { multiScore: 4, tfScore: 3, numScore: 3 } },
+        assignedClassIds: [],
+        questions: [
+          {
+            id: 'q1',
+            type: 'multi',
+            content: 'Công thức tính độ dịch chuyển trong dao động điều hòa là $x = A \\cos(\\omega t + \\varphi)$. Biên độ $A$ có đơn vị là:',
+            options: ['mét (m)', 'giây (s)', 'hertz (Hz)', 'radian (rad)'],
+            answerMCQ: 'A'
+          }
+        ]
+      }
+    ],
+    quizAttempts: []
+  });
+
+  const handleLoginSuccess = (userData) => {
+    setCurrentUser(userData);
+  };
+
+  const handleConfirmLink = ({ studentId, classId }) => {
+    setCurrentUser({
+      ...currentUser,
+      linkedStudentId: studentId,
+      classId: classId
+    });
+    showToast('Xác thực tài khoản thành công!');
+  };
+
+  const handleSaveResult = (result) => {
+    const newAttempt = {
+      studentId: currentUser.linkedStudentId,
+      ...result,
+      timestamp: new Date().toLocaleTimeString() + ' ' + new Date().toLocaleDateString()
+    };
+
+    setDb(prev => ({
+      ...prev,
+      quizAttempts: [...(prev.quizAttempts || []), newAttempt]
+    }));
+  };
+
+  if (!currentUser) {
+    return <Auth onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  if (currentUser.role === 'student' && !currentUser.linkedStudentId) {
     return (
-      <QuizEditor 
+      <StudentLinkProfile 
+        currentUser={currentUser} 
         db={db} 
-        setDb={setDb} 
-        quizId={editingQuizId} 
-        onClose={() => setEditingQuizId(null)} 
-        showToast={showToast} 
+        onConfirmLink={handleConfirmLink} 
+        onLogout={() => setCurrentUser(null)} 
+      />
+    );
+  }
+
+  if (activeQuiz) {
+    return (
+      <QuizPlayer 
+        quiz={activeQuiz} 
+        currentUser={currentUser} 
+        onFinish={() => setActiveQuiz(null)} 
+        onSaveResult={handleSaveResult} 
+      />
+    );
+  }
+
+  if (currentUser.role === 'student') {
+    return (
+      <StudentDashboard 
+        currentUser={currentUser} 
+        db={db} 
+        onLogout={() => setCurrentUser(null)} 
+        onStartQuiz={(quizMat) => setActiveQuiz(quizMat)} 
       />
     );
   }
@@ -2397,293 +2513,53 @@ function TeacherDashboard({ currentUser, db, setDb, onLogout, editingQuizId, set
     <div className="min-h-screen bg-gray-100 flex flex-col font-sans">
       <header className="bg-gray-900 text-white p-4 shadow-md flex justify-between items-center z-10">
         <div className="flex items-center gap-3">
-          <ShieldCheck size={26} className="text-blue-400" />
+          <ShieldCheck className="text-blue-400" size={26} />
           <div>
-            <h1 className="text-base font-bold uppercase tracking-wide">Trang Quản Trị Giáo Viên</h1>
-            <p className="text-xs text-gray-400">Xin chào, {currentUser?.name}</p>
+            <h1 className="text-base sm:text-lg font-bold uppercase tracking-wider">Hệ Thống Quản Trị - Thầy Lê Công Huynh</h1>
+            <p className="text-xs text-gray-400">Quản lý lớp học, học liệu và thống kê điểm số</p>
           </div>
         </div>
         <button 
-          onClick={onLogout} 
-          className="bg-gray-800 hover:bg-black px-3 py-1.5 rounded flex items-center gap-1.5 text-sm font-medium transition-colors border border-gray-700"
+          onClick={() => setCurrentUser(null)} 
+          className="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg flex items-center gap-1.5 text-sm font-medium transition-colors border border-gray-700"
         >
           <LogOut size={16}/> Đăng xuất
         </button>
       </header>
 
+      <div className="flex border-b border-gray-200 bg-white shadow-xs">
+        <button 
+          onClick={() => setActiveTab('classes')}
+          className={`flex-1 py-4 px-6 font-bold text-sm flex items-center justify-center gap-2 border-b-2 transition-colors ${activeTab === 'classes' ? 'border-blue-600 text-blue-700 bg-blue-50/50' : 'border-transparent text-gray-600 hover:bg-gray-50'}`}
+        >
+          <Users size={18}/> Quản Lý Lớp & Học Sinh
+        </button>
+        <button 
+          onClick={() => setActiveTab('data')}
+          className={`flex-1 py-4 px-6 font-bold text-sm flex items-center justify-center gap-2 border-b-2 transition-colors ${activeTab === 'data' ? 'border-blue-600 text-blue-700 bg-blue-50/50' : 'border-transparent text-gray-600 hover:bg-gray-50'}`}
+        >
+          <Database size={18}/> Quản Lý Học Liệu & Đề Thi
+        </button>
+        <button 
+          onClick={() => setActiveTab('results')}
+          className={`flex-1 py-4 px-6 font-bold text-sm flex items-center justify-center gap-2 border-b-2 transition-colors ${activeTab === 'results' ? 'border-blue-600 text-blue-700 bg-blue-50/50' : 'border-transparent text-gray-600 hover:bg-gray-50'}`}
+        >
+          <BarChart2 size={18}/> Thống Kê Kết Quả & Điểm
+        </button>
+      </div>
+
+      <main className="flex-1 overflow-hidden relative">
+        {activeTab === 'classes' && <ClassManagement db={db} setDb={setDb} showToast={showToast} />}
+        {activeTab === 'data' && <DataManagement db={db} setDb={setDb} showToast={showToast} />}
+        {activeTab === 'results' && <ResultManagement db={db} showToast={showToast} />}
+      </main>
+
       {toastMessage && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-2xl z-50 text-sm font-bold border border-gray-700 animate-bounce">
-          {toastMessage}
+        <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-bounce border border-gray-700">
+          <CheckCircle size={20} className="text-green-400 shrink-0" />
+          <span className="font-bold text-sm">{toastMessage}</span>
         </div>
       )}
-
-      <div className="flex bg-white border-b px-6 gap-6 text-sm font-bold overflow-x-auto">
-        <button 
-          onClick={() => setActiveMenu('classes')} 
-          className={`py-3 border-b-2 whitespace-nowrap transition-colors ${activeMenu === 'classes' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
-        >
-          Quản lý Lớp & Học sinh
-        </button>
-        <button 
-          onClick={() => setActiveMenu('data')} 
-          className={`py-3 border-b-2 whitespace-nowrap transition-colors ${activeMenu === 'data' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
-        >
-          Chương trình & Học liệu
-        </button>
-        <button 
-          onClick={() => setActiveMenu('results')} 
-          className={`py-3 border-b-2 whitespace-nowrap transition-colors ${activeMenu === 'results' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
-        >
-          Thống kê kết quả & Điểm số
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-hidden">
-        {activeMenu === 'classes' && (
-          <ClassManagement db={db} setDb={setDb} showToast={showToast} />
-        )}
-        {activeMenu === 'data' && (
-          <DataManagement db={db} setDb={setDb} showToast={showToast} onOpenQuizEditor={setEditingQuizId} />
-        )}
-        {activeMenu === 'results' && (
-          <ResultManagement db={db} showToast={showToast} />
-        )}
-      </div>
     </div>
   );
-}
-
-/**
- * ==========================================
- * COMPONENT CHÍNH (App.jsx)
- * ==========================================
- */
-export default function App() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [activeQuiz, setActiveQuiz] = useState(null);
-  const [editingQuizId, setEditingQuizId] = useState(null);
-
-  const [db, setDb] = useState({
-    grades: [
-      { id: 'g10', name: 'Khối 10' },
-      { id: 'g11', name: 'Khối 11' },
-      { id: 'g12', name: 'Khối 12' }
-    ],
-    classes: [
-      { id: 'c12a1', gradeId: 'g12', name: '12A1' },
-      { id: 'c12a2', gradeId: 'g12', name: '12A2' },
-      { id: 'c11a1', gradeId: 'g11', name: '11A1' },
-      { id: 'c10a1', gradeId: 'g10', name: '10A1' }
-    ],
-    studentsList: [
-      { id: 'mock_student_id', classId: 'c12a1', name: 'Học sinh Demo', gender: 'Nam', phone: '0901234567', email: 'demo@gmail.com', done: 2 },
-    ],
-    chapters: [
-      // Khối 10
-      { id: 'ch10_1', gradeId: 'g10', name: 'Chương I. Mở đầu' },
-      { id: 'ch10_2', gradeId: 'g10', name: 'Chương II. Động học' },
-      { id: 'ch10_3', gradeId: 'g10', name: 'Chương III. Động lực học' },
-      { id: 'ch10_4', gradeId: 'g10', name: 'Chương IV. Năng lượng, công, công suất' },
-      { id: 'ch10_5', gradeId: 'g10', name: 'Chương V. Động lượng' },
-      { id: 'ch10_6', gradeId: 'g10', name: 'Chương VI. Chuyển động tròn' },
-      { id: 'ch10_7', gradeId: 'g10', name: 'Chương VII. Biến dạng của vật rắn. Áp suất chất lỏng' },
-      // Khối 11
-      { id: 'ch11_1', gradeId: 'g11', name: 'Chương 1. Dao động' },
-      { id: 'ch11_2', gradeId: 'g11', name: 'Chương 2. Sóng' },
-      { id: 'ch11_3', gradeId: 'g11', name: 'Chương 3. Điện trường' },
-      { id: 'ch11_4', gradeId: 'g11', name: 'Chương 4. Dòng điện. Mạch điện' },
-      // Khối 12
-      { id: 'ch12_1', gradeId: 'g12', name: 'Chương I. Vật lí nhiệt' },
-      { id: 'ch12_2', gradeId: 'g12', name: 'Chương II. Khí lí tưởng' },
-      { id: 'ch12_3', gradeId: 'g12', name: 'Chương III. Từ trường' },
-      { id: 'ch12_4', gradeId: 'g12', name: 'Chương IV. Vật lí hạt nhân' }
-    ],
-    lessons: [
-      // ================= KHỐI 10 =================
-      { id: 'l10_1', chapterId: 'ch10_1', name: 'Bài 1. Làm quen với Vật lí' },
-      { id: 'l10_2', chapterId: 'ch10_1', name: 'Bài 2. Các quy tắc an toàn trong phòng thực hành Vật lí' },
-      { id: 'l10_3', chapterId: 'ch10_1', name: 'Bài 3. Thực hành tính sai số trong phép đo. Ghi kết quả đo' },
-      { id: 'l10_4', chapterId: 'ch10_2', name: 'Bài 4. Độ dịch chuyển và quãng đường đi được' },
-      { id: 'l10_5', chapterId: 'ch10_2', name: 'Bài 5. Tốc độ và vận tốc' },
-      { id: 'l10_6', chapterId: 'ch10_2', name: 'Bài 6. Thực hành: Đo tốc độ của vật chuyển động' },
-      { id: 'l10_7', chapterId: 'ch10_2', name: 'Bài 7. Đồ thị độ dịch chuyển – thời gian' },
-      { id: 'l10_8', chapterId: 'ch10_2', name: 'Bài 8. Chuyển động biến đổi. Gia tốc' },
-      { id: 'l10_9', chapterId: 'ch10_2', name: 'Bài 9. Chuyển động thẳng biến đổi đều' },
-      { id: 'l10_10', chapterId: 'ch10_2', name: 'Bài 10. Sự rơi tự do' },
-      { id: 'l10_11', chapterId: 'ch10_2', name: 'Bài 11. Thực hành: Đo gia tốc rơi tự do' },
-      { id: 'l10_12', chapterId: 'ch10_2', name: 'Bài 12. Chuyển động ném' },
-      { id: 'l10_13', chapterId: 'ch10_3', name: 'Bài 13. Tổng hợp và phân tích lực. Cân bằng lực' },
-      { id: 'l10_14', chapterId: 'ch10_3', name: 'Bài 14. Định luật 1 Newton' },
-      { id: 'l10_15', chapterId: 'ch10_3', name: 'Bài 15. Định luật 2 Newton' },
-      { id: 'l10_16', chapterId: 'ch10_3', name: 'Bài 16. Định luật 3 Newton' },
-      { id: 'l10_17', chapterId: 'ch10_3', name: 'Bài 17. Trọng lực và lực căng' },
-      { id: 'l10_18', chapterId: 'ch10_3', name: 'Bài 18. Lực ma sát' },
-      { id: 'l10_19', chapterId: 'ch10_3', name: 'Bài 19. Lực cản và lực nâng' },
-      { id: 'l10_20', chapterId: 'ch10_3', name: 'Bài 20. Một số ví dụ về cách giải các bài toán thuộc phần động lực học' },
-      { id: 'l10_21', chapterId: 'ch10_3', name: 'Bài 21. Moment lực. Cân bằng của vật rắn' },
-      { id: 'l10_22', chapterId: 'ch10_3', name: 'Bài 22. Thực hành: Tổng hợp lực' },
-      { id: 'l10_23', chapterId: 'ch10_4', name: 'Bài 23. Năng lượng. Công cơ học' },
-      { id: 'l10_24', chapterId: 'ch10_4', name: 'Bài 24. Công suất' },
-      { id: 'l10_25', chapterId: 'ch10_4', name: 'Bài 25. Động năng, thế năng' },
-      { id: 'l10_26', chapterId: 'ch10_4', name: 'Bài 26. Cơ năng và định luật bảo toàn cơ năng' },
-      { id: 'l10_27', chapterId: 'ch10_4', name: 'Bài 27. Hiệu suất' },
-      { id: 'l10_28', chapterId: 'ch10_5', name: 'Bài 28. Động lượng' },
-      { id: 'l10_29', chapterId: 'ch10_5', name: 'Bài 29. Định luật bảo toàn động lượng' },
-      { id: 'l10_30', chapterId: 'ch10_5', name: 'Bài 30. Thực hành: Xác định động lượng của vật trước và sau va chạm' },
-      { id: 'l10_31', chapterId: 'ch10_6', name: 'Bài 31. Động học của chuyển động tròn đều' },
-      { id: 'l10_32', chapterId: 'ch10_6', name: 'Bài 32. Lực hướng tâm và gia tốc hướng tâm' },
-      { id: 'l10_33', chapterId: 'ch10_7', name: 'Bài 33. Biến dạng của vật rắn' },
-      { id: 'l10_34', chapterId: 'ch10_7', name: 'Bài 34. Khối lượng riêng. Áp suất chất lỏng' },
-
-      // ================= KHỐI 11 =================
-      { id: 'l11_1', chapterId: 'ch11_1', name: 'Bài 1. Dao động điều hòa' },
-      { id: 'l11_2', chapterId: 'ch11_1', name: 'Bài 2. Mô tả dao động điều hòa' },
-      { id: 'l11_3', chapterId: 'ch11_1', name: 'Bài 3. Vận tốc, gia tốc trong dao động điều hòa' },
-      { id: 'l11_4', chapterId: 'ch11_1', name: 'Bài 4. Bài tập về dao động điều hòa' },
-      { id: 'l11_5', chapterId: 'ch11_1', name: 'Bài 5. Động năng. Thế năng. Sự chuyển hóa năng lượng trong dao động điều hòa' },
-      { id: 'l11_6', chapterId: 'ch11_1', name: 'Bài 6. Dao động tắt dần. Dao động cưỡng bức. Hiện tượng cộng hưởng' },
-      { id: 'l11_7', chapterId: 'ch11_1', name: 'Bài 7. Bài tập về sự chuyển hóa năng lượng trong dao động điều hòa' },
-      { id: 'l11_8', chapterId: 'ch11_2', name: 'Bài 8. Mô tả sóng' },
-      { id: 'l11_9', chapterId: 'ch11_2', name: 'Bài 9. Sóng ngang, sóng dọc, sự truyền năng lượng của sóng cơ' },
-      { id: 'l11_10', chapterId: 'ch11_2', name: 'Bài 10. Thực hành: Đo tần số của sóng âm' },
-      { id: 'l11_11', chapterId: 'ch11_2', name: 'Bài 11. Sóng điện từ' },
-      { id: 'l11_12', chapterId: 'ch11_2', name: 'Bài 12. Giao thoa sóng' },
-      { id: 'l11_13', chapterId: 'ch11_2', name: 'Bài 13. Sóng dừng' },
-      { id: 'l11_14', chapterId: 'ch11_2', name: 'Bài 14. Bài tập về sóng' },
-      { id: 'l11_15', chapterId: 'ch11_2', name: 'Bài 15. Thực hành: Đo tốc độ truyền âm' },
-      { id: 'l11_16', chapterId: 'ch11_3', name: 'Bài 16. Lực tương tác giữa hai điện tích' },
-      { id: 'l11_17', chapterId: 'ch11_3', name: 'Bài 17. Khái niệm điện trường' },
-      { id: 'l11_18', chapterId: 'ch11_3', name: 'Bài 18. Điện trường đều' },
-      { id: 'l11_19', chapterId: 'ch11_3', name: 'Bài 19. Thế năng điện' },
-      { id: 'l11_20', chapterId: 'ch11_3', name: 'Bài 20. Điện thế' },
-      { id: 'l11_21', chapterId: 'ch11_3', name: 'Bài 21. Tụ điện' },
-      { id: 'l11_22', chapterId: 'ch11_4', name: 'Bài 22. Cường độ dòng điện' },
-      { id: 'l11_23', chapterId: 'ch11_4', name: 'Bài 23. Điện trở. Định luật Ohm' },
-      { id: 'l11_24', chapterId: 'ch11_4', name: 'Bài 24. Nguồn điện' },
-      { id: 'l11_25', chapterId: 'ch11_4', name: 'Bài 25. Năng lượng điện và công suất điện' },
-      { id: 'l11_26', chapterId: 'ch11_4', name: 'Bài 26. Thực hành: Đo suất điện động và điện trở trong của pin điện hoá' },
-
-      // ================= KHỐI 12 =================
-      { id: 'l12_1', chapterId: 'ch12_1', name: 'Bài 1. Cấu trúc của chất. Sự chuyển thể' },
-      { id: 'l12_2', chapterId: 'ch12_1', name: 'Bài 2. Nội năng. Định luật I của nhiệt động lực học' },
-      { id: 'l12_3', chapterId: 'ch12_1', name: 'Bài 3. Nhiệt độ, thang nhiệt độ – nhiệt kế' },
-      { id: 'l12_4', chapterId: 'ch12_1', name: 'Bài 4. Nhiệt dung riêng' },
-      { id: 'l12_5', chapterId: 'ch12_1', name: 'Bài 5. Nhiệt nóng chảy riêng' },
-      { id: 'l12_6', chapterId: 'ch12_1', name: 'Bài 6. Nhiệt hoá hơi riêng' },
-      { id: 'l12_7', chapterId: 'ch12_1', name: 'Bài 7. Bài tập về vật lí nhiệt' },
-      { id: 'l12_8', chapterId: 'ch12_2', name: 'Bài 8. Mô hình động học phân tử chất khí' },
-      { id: 'l12_9', chapterId: 'ch12_2', name: 'Bài 9. Định luật Boyle' },
-      { id: 'l12_10', chapterId: 'ch12_2', name: 'Bài 10. Định luật Charles' },
-      { id: 'l12_11', chapterId: 'ch12_2', name: 'Bài 11. Phương trình trạng thái của khí lí tưởng' },
-      { id: 'l12_12', chapterId: 'ch12_2', name: 'Bài 12. Áp suất khí theo mô hình động học phân tử. Quan hệ giữa động năng phân tử và nhiệt độ' },
-      { id: 'l12_13', chapterId: 'ch12_2', name: 'Bài 13. Bài tập về khí lí tưởng' },
-      { id: 'l12_14', chapterId: 'ch12_3', name: 'Bài 14. Từ trường' },
-      { id: 'l12_15', chapterId: 'ch12_3', name: 'Bài 15. Lực từ tác dụng lên dây dẫn mang dòng điện. Cảm ứng từ' },
-      { id: 'l12_16', chapterId: 'ch12_3', name: 'Bài 16. Từ thông. Hiện tượng cảm ứng điện từ' },
-      { id: 'l12_17', chapterId: 'ch12_3', name: 'Bài 17. Máy phát điện xoay chiều' },
-      { id: 'l12_18', chapterId: 'ch12_3', name: 'Bài 18. Ứng dụng hiện tượng cảm ứng điện từ' },
-      { id: 'l12_19', chapterId: 'ch12_3', name: 'Bài 19. Điện từ trường. Mô hình sóng điện từ' },
-      { id: 'l12_20', chapterId: 'ch12_3', name: 'Bài 20. Bài tập về từ trường' },
-      { id: 'l12_21', chapterId: 'ch12_4', name: 'Bài 21. Cấu trúc hạt nhân' },
-      { id: 'l12_22', chapterId: 'ch12_4', name: 'Bài 22. Phản ứng hạt nhân và năng lượng liên kết' },
-      { id: 'l12_23', chapterId: 'ch12_4', name: 'Bài 23. Hiện tượng phóng xạ' },
-      { id: 'l12_24', chapterId: 'ch12_4', name: 'Bài 24. Công nghiệp hạt nhân' },
-      { id: 'l12_25', chapterId: 'ch12_4', name: 'Bài 25. Bài tập về vật lí hạt nhân' }
-    ],
-    materials: [
-      { 
-        id: 'm1', 
-        lessonId: 'l12_1', 
-        type: 'theory', 
-        name: 'Lý thuyết Trọng tâm Bài 1 - Kết nối tri thức', 
-        link: 'https://example.com',
-        assignedClassIds: []
-      },
-      { 
-        id: 'm2', 
-        lessonId: 'l12_1', 
-        type: 'quiz', 
-        name: 'Đề kiểm tra 15p - Bài 1', 
-        quizConfig: { time: 15, attempts: 2, sectionScores: { multiScore: 4.0, tfScore: 3.0, numScore: 3.0 } }, 
-        assignedClassIds: ['c12a1'],
-        questions: [
-          { 
-            id: 'q1', 
-            type: 'multi', 
-            content: 'Công thức tính nhiệt lượng trong quá trình chuyển thể là $Q = m \\cdot L$. Trong đó $L$ là gì?', 
-            options: ['Nhiệt dung riêng', 'Nhiệt hóa hơi riêng hoặc Nhiệt nóng chảy riêng', 'Nội năng của chất', 'Khối lượng riêng'], 
-            answerMCQ: 'B' 
-          }
-        ] 
-      }
-    ],
-    quizAttempts: []
-  });
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setActiveQuiz(null);
-    setEditingQuizId(null);
-  };
-
-  const handleConfirmLink = ({ studentId, classId }) => {
-    setCurrentUser(prev => ({ ...prev, linkedStudentId: studentId, classId: classId }));
-  };
-
-  const handleSaveResult = (result) => {
-    setDb(prev => ({
-      ...prev,
-      quizAttempts: [...prev.quizAttempts, { studentId: currentUser.linkedStudentId, ...result, timestamp: new Date().toLocaleDateString('vi-VN') }]
-    }));
-  };
-
-  if (currentUser) {
-    if (currentUser.role === 'teacher') {
-      return (
-        <TeacherDashboard 
-          currentUser={currentUser} 
-          db={db} 
-          setDb={setDb} 
-          onLogout={handleLogout} 
-          editingQuizId={editingQuizId}
-          setEditingQuizId={setEditingQuizId}
-        />
-      );
-    }
-
-    if (currentUser.role === 'student') {
-      if (!currentUser.linkedStudentId) {
-        return (
-          <StudentLinkProfile 
-            currentUser={currentUser}
-            db={db}
-            onConfirmLink={handleConfirmLink}
-            onLogout={handleLogout}
-          />
-        );
-      }
-
-      if (activeQuiz) {
-        return (
-          <QuizPlayer 
-            quiz={activeQuiz} 
-            currentUser={currentUser} 
-            onFinish={() => setActiveQuiz(null)}
-            onSaveResult={handleSaveResult}
-          />
-        );
-      }
-
-      return (
-        <StudentDashboard 
-          currentUser={currentUser}
-          db={db}
-          onLogout={handleLogout}
-          onStartQuiz={(mat) => setActiveQuiz(mat)}
-        />
-      );
-    }
-  }
-
-  return <Auth onLoginSuccess={setCurrentUser} />;
 }
