@@ -9,7 +9,8 @@
 import React, { useState, useEffect } from 'react';
 import { User, Lock, Phone, Mail, GraduationCap, ShieldCheck, LogOut, BookOpen, ChevronRight, ChevronDown, FileText, Video, FileQuestion, Clock, School, Users, UserCheck, AlertCircle, CheckCircle, Database, Plus, Trash2, Edit, FileSpreadsheet, ArrowLeft, Save, Image as ImageIcon, Link as LinkIcon, Sliders, Eye, BarChart2, Filter, Calendar, Award, Share2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-
+import { firestoreDb } from './firebase';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 // ==========================================
 // HÀM HỖ TRỢ: XỬ LÝ CÔNG THỨC MATHTYPE / LATEX (Dùng CDN KaTeX toàn cục)
 // ==========================================
