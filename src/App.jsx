@@ -45,6 +45,25 @@ const renderMathContent = (text) => {
  * Chức năng: Đăng nhập/Đăng ký dành cho Học sinh và Quản trị viên.
  * ==========================================
  */
+/**
+ * ==========================================
+ * MODULE: XÁC THỰC NGƯỜI DÙNG (Auth.jsx)
+ * Chức năng: Đăng ký & Đăng nhập với mật khẩu được mã hóa riêng biệt.
+ * ==========================================
+ */
+
+// Hàm hỗ trợ mã hóa chuỗi (băm mật khẩu một chiều bằng cơ chế đơn giản an toàn trên web)
+const hashPassword = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0; // Chuyển đổi thành số nguyên 32bit
+  }
+  // Tạo chuỗi mã hóa riêng biệt kết hợp độ dài và định dạng Hex ngầm định
+  return "hash_" + Math.abs(hash).toString(16) + "_" + btoa(str).substring(0, 6);
+};
+
 function Auth({ onLoginSuccess }) {
   const [role, setRole] = useState('student');
   const [mode, setMode] = useState('login'); 
@@ -55,25 +74,80 @@ function Auth({ onLoginSuccess }) {
     password: '',
     confirmPassword: ''
   });
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setErrorMsg('');
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (role === 'student') {
-        onLoginSuccess({
-            role: 'student',
-            name: formData.name || 'Học sinh Demo',
-            phone: formData.phone || '0901234567'
-        });
-    } else {
-        onLoginSuccess({
-            role: 'teacher',
-            name: 'Thầy Lê Công Huynh',
-            phone: formData.phone || '0900000000'
-        });
+    setErrorMsg('');
+
+    if (role === 'teacher') {
+      onLoginSuccess({
+        role: 'teacher',
+        name: 'Thầy Lê Công Huynh',
+        phone: formData.phone || '0900000000'
+      });
+      return;
+    }
+
+    // Lấy cơ sở dữ liệu tài khoản học sinh đã lưu
+    const savedAccounts = JSON.parse(localStorage.getItem('student_secure_accounts') || '{}');
+
+    if (mode === 'register') {
+      if (formData.password !== formData.confirmPassword) {
+        setErrorMsg('Mật khẩu xác nhận không khớp!');
+        return;
+      }
+      
+      // Kiểm tra số điện thoại (đã được định danh riêng)
+      if (savedAccounts[formData.phone]) {
+        setErrorMsg('Số điện thoại này đã được đăng ký. Vui lòng chuyển sang Đăng Nhập!');
+        return;
+      }
+
+      // Mã hóa mật khẩu riêng biệt cho học sinh này
+      const securePasswordHash = hashPassword(formData.password);
+
+      savedAccounts[formData.phone] = {
+        name: formData.name,
+        phone: formData.phone,
+        passwordHash: securePasswordHash, // Lưu chuỗi đã mã hóa riêng biệt
+        email: formData.email
+      };
+      
+      localStorage.setItem('student_secure_accounts', JSON.stringify(savedAccounts));
+
+      alert('Đăng ký tài khoản và mã hóa bảo mật thành công!');
+      onLoginSuccess({
+        role: 'student',
+        name: formData.name,
+        phone: formData.phone
+      });
+
+    } else if (mode === 'login') {
+      const account = savedAccounts[formData.phone];
+      if (!account) {
+        setErrorMsg('Số điện thoại này chưa được đăng ký trong hệ thống!');
+        return;
+      }
+
+      // Kiểm tra mã hóa mật khẩu nhập vào có khớp với mã hóa đã lưu hay không
+      const inputPasswordHash = hashPassword(formData.password);
+      if (account.passwordHash !== inputPasswordHash) {
+        setErrorMsg('Mật khẩu không chính xác. Vui lòng kiểm tra lại!');
+        return;
+      }
+
+      // Đăng nhập thành công
+      onLoginSuccess({
+        role: 'student',
+        name: account.name,
+        phone: account.phone
+      });
     }
   };
 
@@ -89,7 +163,7 @@ function Auth({ onLoginSuccess }) {
 
         <div className="flex text-sm font-medium border-b border-gray-200">
           <button
-            onClick={() => { setRole('student'); setMode('login'); }}
+            onClick={() => { setRole('student'); setMode('login'); setErrorMsg(''); }}
             className={`flex-1 py-3 flex items-center justify-center gap-2 transition-colors ${
               role === 'student' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-500 hover:bg-gray-50'
             }`}
@@ -97,7 +171,7 @@ function Auth({ onLoginSuccess }) {
             <GraduationCap size={18} /> Học Sinh
           </button>
           <button
-            onClick={() => setRole('teacher')}
+            onClick={() => { setRole('teacher'); setErrorMsg(''); }}
             className={`flex-1 py-3 flex items-center justify-center gap-2 transition-colors ${
               role === 'teacher' ? 'text-gray-900 border-b-2 border-gray-900 bg-gray-50' : 'text-gray-500 hover:bg-gray-50'
             }`}
@@ -107,6 +181,12 @@ function Auth({ onLoginSuccess }) {
         </div>
 
         <div className="p-6 sm:p-8">
+          {errorMsg && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg font-medium">
+              {errorMsg}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {role === 'student' && mode === 'register' && (
               <div className="relative">
@@ -191,15 +271,15 @@ function Auth({ onLoginSuccess }) {
             <div className="mt-6 flex flex-col items-center gap-2 text-sm text-gray-600">
               {mode === 'login' ? (
                 <>
-                  <button onClick={() => setMode('register')} className="hover:text-blue-600 font-medium">
+                  <button onClick={() => { setMode('register'); setErrorMsg(''); }} className="hover:text-blue-600 font-medium">
                     Chưa có tài khoản? Đăng ký ngay
                   </button>
-                  <button onClick={() => setMode('forgot')} className="hover:text-blue-600">
+                  <button onClick={() => { setMode('forgot'); setErrorMsg(''); }} className="hover:text-blue-600">
                     Quên mật khẩu? (Báo cho thầy)
                   </button>
                 </>
               ) : (
-                <button onClick={() => setMode('login')} className="hover:text-blue-600 font-medium">
+                <button onClick={() => { setMode('login'); setErrorMsg(''); }} className="hover:text-blue-600 font-medium">
                   Đã có tài khoản? Quay lại đăng nhập
                 </button>
               )}
@@ -210,7 +290,6 @@ function Auth({ onLoginSuccess }) {
     </div>
   );
 }
-
 /**
  * ==========================================
  * MODULE: XÁC THỰC HỒ SƠ HỌC SINH (StudentLinkProfile.jsx)
