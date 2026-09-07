@@ -503,7 +503,7 @@ function StudentDashboard({ currentUser, db, onLogout, onStartQuiz }) {
       <header className="bg-purple-700 text-white p-4 shadow-md flex justify-between items-center z-10 relative">
         <div>
           <h1 className="text-base sm:text-lg font-bold uppercase tracking-wide">Học Vật Lý Cùng Thầy Huynh</h1>
-          <p className="text-xs text-purple-200 mt-0.5">Nền tảng học tập & rèn luyện tư duy</p>
+          <p className="text-xs text-purple-200 mt-0.5">Vật Lý không khó vì đã có thầy Huynh</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right hidden sm:block">
