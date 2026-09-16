@@ -1023,25 +1023,27 @@ function QuizPlayer({ quiz, currentUser, onFinish, onSaveResult }) {
  * MODULE: SOẠN CÂU HỎI & CẤU HÌNH ĐIỂM (QuizEditor.jsx)
  * Chức năng: Giáo viên biên tập câu hỏi trắc nghiệm và cấu hình phân bổ điểm.
  * ==========================================
- */
-function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
+import React, { useState } from 'react';
+import { ArrowLeft, Save, Sliders, FileQuestion, Trash2, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+
+export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
   const quiz = db.materials?.find(m => m.id === quizId) || { name: 'Đề kiểm tra', questions: [], quizConfig: {} };
-  
+
   const [questions, setQuestions] = useState(quiz.questions || []);
   const [answerLink, setAnswerLink] = useState(quiz.quizConfig?.answerLink || '');
 
   const [sectionScores, setSectionScores] = useState(quiz.quizConfig?.sectionScores || {
-    multiScore: 4.0, 
-    tfScore: 3.0,     
-    numScore: 3.0     
+    multiScore: 4.0,
+    tfScore: 3.0,
+    numScore: 3.0
   });
 
   const addQuestion = (type) => {
     const newQ = {
-      id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      type: type, 
-      content: '',       
-      imageLink: '',     
+      id: `q_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      type: type,
+      content: '',
+      imageLink: '',
       options: ['', '', '', ''],
       answerMCQ: 'A',
       tfStatements: [
@@ -1050,48 +1052,69 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
         { text: '', isTrue: true },
         { text: '', isTrue: false },
       ],
-      answerNumDot: '',    
-      answerNumComma: '',  
+      answerNumDot: '',
+      answerNumComma: '',
       answerShort: ''
     };
-    setQuestions([...questions, newQ]);
+    setQuestions(prev => [...prev, newQ]);
   };
 
+  // Cập nhật trường dữ liệu dạng Deep Copy an toàn
   const updateQuestionField = (index, field, value) => {
-    const updated = [...questions];
-    updated[index][field] = value;
-    setQuestions(updated);
+    setQuestions(prev => prev.map((q, i) => i === index ? { ...q, [field]: value } : q));
+  };
+
+  // Tự động đồng bộ dấu chấm và phẩy cho câu hỏi số
+  const handleNumericAnswerChange = (index, rawValue) => {
+    const sanitized = rawValue.replace(/[^0-9.,-]/g, '');
+    const dotVer = sanitized.replace(',', '.');
+    const commaVer = sanitized.replace('.', ',');
+    
+    setQuestions(prev => prev.map((q, i) => {
+      if (i !== index) return q;
+      return {
+        ...q,
+        answerNumDot: dotVer,
+        answerNumComma: commaVer
+      };
+    }));
   };
 
   const updateOptionText = (qIndex, optIndex, value) => {
-    const updated = [...questions];
-    if (!updated[qIndex].options) updated[qIndex].options = ['', '', '', ''];
-    updated[qIndex].options[optIndex] = value;
-    setQuestions(updated);
+    setQuestions(prev => prev.map((q, i) => {
+      if (i !== qIndex) return q;
+      const newOptions = [...(q.options || ['', '', '', ''])];
+      newOptions[optIndex] = value;
+      return { ...q, options: newOptions };
+    }));
   };
 
   const updateTfStatement = (qIndex, stmtIndex, field, value) => {
-    const updated = [...questions];
-    updated[qIndex].tfStatements[stmtIndex][field] = value;
-    setQuestions(updated);
+    setQuestions(prev => prev.map((q, i) => {
+      if (i !== qIndex) return q;
+      const newStmts = (q.tfStatements || []).map((stmt, sIdx) => 
+        sIdx === stmtIndex ? { ...stmt, [field]: value } : stmt
+      );
+      return { ...q, tfStatements: newStmts };
+    }));
   };
 
   const removeQuestion = (index) => {
-    if (window.confirm('Thầy có chắc chắn muốn xóa câu hỏi này không?')) {
-      setQuestions(questions.filter((_, i) => i !== index));
+    if (window.confirm('Thầy/Cô có chắc chắn muốn xóa câu hỏi này không?')) {
+      setQuestions(prev => prev.filter((_, i) => i !== index));
     }
   };
 
   const handleSaveAll = () => {
-    const updatedMaterials = db.materials.map(m => {
+    const updatedMaterials = (db.materials || []).map(m => {
       if (m.id === quizId) {
         return {
           ...m,
-          questions: questions,
-          quizConfig: { 
-            ...m.quizConfig, 
+          questions,
+          quizConfig: {
+            ...m.quizConfig,
             answerLink,
-            sectionScores 
+            sectionScores
           }
         };
       }
@@ -1099,24 +1122,28 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
     });
 
     setDb({ ...db, materials: updatedMaterials });
-    showToast('Đã lưu cấu hình điểm và đề thi thành công!');
-    onClose();
+    if (showToast) showToast('Đã lưu cấu hình điểm và đề thi thành công!');
+    if (onClose) onClose();
   };
 
   const countMulti = questions.filter(q => q.type === 'multi' || !q.type).length;
   const countTf = questions.filter(q => q.type === 'truefalse').length;
   const countNum = questions.filter(q => q.type === 'number').length;
+  const totalConfiguredScore = (sectionScores.multiScore + sectionScores.tfScore + sectionScores.numScore).toFixed(2);
 
   return (
     <div className="h-full flex flex-col bg-gray-100 font-sans">
+      {/* Header */}
       <div className="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
             <ArrowLeft size={20}/>
           </button>
           <div>
-            <h2 className="text-base font-bold text-gray-900">Biên tập câu hỏi & Cấu hình điểm: {quiz.name}</h2>
-            <p className="text-xs text-gray-500">Tổng số câu: <strong className="text-blue-600">{questions.length} câu</strong></p>
+            <h2 className="text-base font-bold text-gray-900">Biên tập: {quiz.name}</h2>
+            <p className="text-xs text-gray-500">
+              Tổng số câu: <strong className="text-blue-600">{questions.length} câu</strong> | Tổng điểm phân bổ: <strong className={Number(totalConfiguredScore) === 10 ? "text-emerald-600" : "text-amber-600"}>{totalConfiguredScore}/10 đ</strong>
+            </p>
           </div>
         </div>
         <button 
@@ -1128,12 +1155,21 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-6">
-        <div className="bg-white p-6 rounded-2xl border border-blue-200 shadow-sm space-y-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
-          <h3 className="font-bold text-sm text-blue-900 flex items-center gap-2 uppercase tracking-wide">
-            <Sliders size={18} className="text-blue-600"/> Cấu hình phân bổ điểm số đề thi (Thang 10)
-          </h3>
+        {/* Phân bổ điểm */}
+        <div className="bg-white p-6 rounded-2xl border border-blue-200 shadow-sm space-y-4 bg-gradient-to-r from-blue-50/40 to-indigo-50/40">
+          <div className="flex justify-between items-center">
+            <h3 className="font-bold text-sm text-blue-900 flex items-center gap-2 uppercase tracking-wide">
+              <Sliders size={18} className="text-blue-600"/> Cấu hình phân bổ điểm số đề thi (Thang 10)
+            </h3>
+            {Number(totalConfiguredScore) !== 10 && (
+              <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
+                Chưa đủ/vượt 10 điểm
+              </span>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs space-y-1">
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-1">
               <label className="block text-xs font-bold text-gray-700">Phần 1: Nhiều lựa chọn</label>
               <p className="text-xs text-gray-400">Số câu: {countMulti} | Mỗi câu: {countMulti > 0 ? (sectionScores.multiScore / countMulti).toFixed(2) : 0} đ</p>
               <div className="flex items-center gap-2 pt-1">
@@ -1141,13 +1177,13 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                   type="number" step="0.25" min="0" max="10"
                   value={sectionScores.multiScore}
                   onChange={(e) => setSectionScores({ ...sectionScores, multiScore: parseFloat(e.target.value) || 0 })}
-                  className="w-full p-2 border rounded-lg text-sm font-bold text-blue-700 bg-gray-50 outline-none"
+                  className="w-full p-2 border rounded-lg text-sm font-bold text-blue-700 bg-gray-50 outline-none focus:bg-white focus:ring-1 focus:ring-blue-500"
                 />
                 <span className="text-xs font-bold text-gray-500">điểm</span>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs space-y-1">
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-1">
               <label className="block text-xs font-bold text-gray-700">Phần 2: Đúng / Sai</label>
               <p className="text-xs text-gray-400">Số câu: {countTf} (Chấm theo % ý)</p>
               <div className="flex items-center gap-2 pt-1">
@@ -1155,13 +1191,13 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                   type="number" step="0.25" min="0" max="10"
                   value={sectionScores.tfScore}
                   onChange={(e) => setSectionScores({ ...sectionScores, tfScore: parseFloat(e.target.value) || 0 })}
-                  className="w-full p-2 border rounded-lg text-sm font-bold text-indigo-700 bg-gray-50 outline-none"
+                  className="w-full p-2 border rounded-lg text-sm font-bold text-indigo-700 bg-gray-50 outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500"
                 />
                 <span className="text-xs font-bold text-gray-500">điểm</span>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs space-y-1">
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-1">
               <label className="block text-xs font-bold text-gray-700">Phần 3: Điền số</label>
               <p className="text-xs text-gray-400">Số câu: {countNum} | Mỗi câu: {countNum > 0 ? (sectionScores.numScore / countNum).toFixed(2) : 0} đ</p>
               <div className="flex items-center gap-2 pt-1">
@@ -1169,7 +1205,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                   type="number" step="0.25" min="0" max="10"
                   value={sectionScores.numScore}
                   onChange={(e) => setSectionScores({ ...sectionScores, numScore: parseFloat(e.target.value) || 0 })}
-                  className="w-full p-2 border rounded-lg text-sm font-bold text-amber-700 bg-gray-50 outline-none"
+                  className="w-full p-2 border rounded-lg text-sm font-bold text-amber-700 bg-gray-50 outline-none focus:bg-white focus:ring-1 focus:ring-amber-500"
                 />
                 <span className="text-xs font-bold text-gray-500">điểm</span>
               </div>
@@ -1177,11 +1213,12 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
           </div>
         </div>
 
+        {/* Danh sách câu hỏi */}
         {questions.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-300 p-8">
             <FileQuestion size={48} className="mx-auto text-gray-300 mb-3"/>
             <p className="text-gray-600 font-bold mb-1">Chưa có câu hỏi nào trong đề này.</p>
-            <p className="text-xs text-gray-400">Thầy hãy bấm vào các nút thêm câu hỏi ở phía dưới để bắt đầu soạn đề nhé.</p>
+            <p className="text-xs text-gray-400">Bấm vào các nút bên dưới để bắt đầu soạn đề.</p>
           </div>
         ) : (
           questions.map((q, qIndex) => (
@@ -1190,7 +1227,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                 <span className="font-black text-blue-900 text-base">Câu {qIndex + 1}</span>
                 <div className="flex items-center gap-3">
                   <select 
-                    value={q.type} 
+                    value={q.type || 'multi'} 
                     onChange={(e) => updateQuestionField(qIndex, 'type', e.target.value)}
                     className="text-xs font-bold bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
                   >
@@ -1210,14 +1247,14 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                   rows={3}
                   value={q.content}
                   onChange={(e) => updateQuestionField(qIndex, 'content', e.target.value)}
-                  placeholder="Nhập nội dung câu hỏi vật lý..."
+                  placeholder="Nhập nội dung câu hỏi..."
                   className="w-full p-3.5 rounded-xl bg-gray-50 text-gray-900 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm leading-relaxed font-medium"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5 flex items-center gap-1.5">
-                  <ImageIcon size={14} className="text-blue-500"/> Link hình ảnh minh họa (Google Drive / Ảnh online)
+                  <ImageIcon size={14} className="text-blue-500"/> Link hình ảnh minh họa (Online / Drive)
                 </label>
                 <input 
                   type="url"
@@ -1229,7 +1266,8 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
               </div>
 
               <div className="pt-3 border-t border-dashed border-gray-200">
-                {q.type === 'multi' && (
+                {/* Phần 1: Trắc nghiệm 4 lựa chọn */}
+                {(q.type === 'multi' || !q.type) && (
                   <div className="space-y-3">
                     <span className="block text-xs font-bold text-blue-900 uppercase tracking-wider">Các phương án trả lời (Chọn 1 đáp án đúng)</span>
                     {['A', 'B', 'C', 'D'].map((opt, optIdx) => (
@@ -1251,6 +1289,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                   </div>
                 )}
 
+                {/* Phần 2: Đúng / Sai 4 ý */}
                 {q.type === 'truefalse' && (
                   <div className="space-y-3">
                     <span className="block text-xs font-bold text-indigo-900 uppercase tracking-wider">Phát biểu Đúng / Sai (4 ý a, b, c, d)</span>
@@ -1262,14 +1301,14 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                           value={stmt.text}
                           onChange={(e) => updateTfStatement(qIndex, sIdx, 'text', e.target.value)}
                           placeholder={`Nhập nội dung ý ${['a', 'b', 'c', 'd'][sIdx]}...`}
-                          className="flex-1 w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm font-medium"
+                          className="flex-1 w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-200 focus:outline-none focus:ring-1 focus:indigo-500 text-sm font-medium"
                         />
                         <div className="flex items-center gap-2 shrink-0">
-                          <label className={`px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-colors ${stmt.isTrue ? 'bg-green-600 text-white border-green-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300'}`}>
+                          <label className={`px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-colors ${stmt.isTrue ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300'}`}>
                             <input type="radio" name={`tf-${q.id}-${sIdx}`} checked={stmt.isTrue} onChange={() => updateTfStatement(qIndex, sIdx, 'isTrue', true)} className="hidden" />
                             Đúng
                           </label>
-                          <label className={`px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-colors {!stmt.isTrue ? 'bg-red-600 text-white border-red-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300'}`}>
+                          <label className={`px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-colors ${!stmt.isTrue ? 'bg-rose-600 text-white border-rose-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300'}`}>
                             <input type="radio" name={`tf-${q.id}-${sIdx}`} checked={!stmt.isTrue} onChange={() => updateTfStatement(qIndex, sIdx, 'isTrue', false)} className="hidden" />
                             Sai
                           </label>
@@ -1279,17 +1318,33 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                   </div>
                 )}
 
+                {/* Phần 3: Trả lời ngắn / Điền số */}
                 {q.type === 'number' && (
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
-                    <span className="block text-xs font-bold text-amber-900 uppercase tracking-wider">Đáp án điền số (Hỗ trợ cả 2 dạng dấu thập phân)</span>
+                    <div className="flex justify-between items-center">
+                      <span className="block text-xs font-bold text-amber-900 uppercase tracking-wider">Đáp án điền số</span>
+                      <span className="text-[11px] text-gray-500 italic">Hệ thống tự động đồng bộ dấu chấm (.) và dấu phẩy (,)</span>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs text-gray-500 mb-1 font-medium">Dạng dùng dấu chấm (.)</label>
-                        <input type="text" value={q.answerNumDot || ''} onChange={(e) => updateQuestionField(qIndex, 'answerNumDot', e.target.value)} placeholder="VD: 15.5" className="w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-300 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-500" />
+                        <label className="block text-xs text-gray-500 mb-1 font-medium">Dạng dấu chấm (.)</label>
+                        <input 
+                          type="text" 
+                          value={q.answerNumDot || ''} 
+                          onChange={(e) => handleNumericAnswerChange(qIndex, e.target.value)} 
+                          placeholder="VD: 15.5" 
+                          className="w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-300 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-500" 
+                        />
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-500 mb-1 font-medium">Dạng dùng dấu phẩy (,)</label>
-                        <input type="text" value={q.answerNumComma || ''} onChange={(e) => updateQuestionField(qIndex, 'answerNumComma', e.target.value)} placeholder="VD: 15,5" className="w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-300 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-500" />
+                        <label className="block text-xs text-gray-500 mb-1 font-medium">Dạng dấu phẩy (,)</label>
+                        <input 
+                          type="text" 
+                          value={q.answerNumComma || ''} 
+                          onChange={(e) => handleNumericAnswerChange(qIndex, e.target.value)} 
+                          placeholder="VD: 15,5" 
+                          className="w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-300 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-500" 
+                        />
                       </div>
                     </div>
                   </div>
@@ -1299,6 +1354,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
           ))
         )}
 
+        {/* Nút thêm câu hỏi */}
         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm text-center space-y-3">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Thêm câu hỏi mới vào đề thi</p>
           <div className="flex flex-wrap justify-center gap-2">
@@ -1308,16 +1364,17 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
           </div>
         </div>
 
+        {/* Link đáp án */}
         <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-2 bg-blue-50/40">
           <label className="block text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
-            <LinkIcon size={14} className="text-blue-600"/> Đường dẫn xem bài giải chi tiết / Video chữa (Dành cho học sinh sau khi nộp bài)
+            <LinkIcon size={14} className="text-blue-600"/> Đường dẫn xem bài giải chi tiết / Video chữa
           </label>
           <input 
             type="url" 
             value={answerLink} 
             onChange={(e) => setAnswerLink(e.target.value)} 
             placeholder="Dán link Google Drive hoặc YouTube vào đây..." 
-            className="w-full p-3 rounded-xl bg-white text-gray-900 border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium shadow-2xs"
+            className="w-full p-3 rounded-xl bg-white text-gray-900 border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium shadow-sm"
           />
         </div>
       </div>
