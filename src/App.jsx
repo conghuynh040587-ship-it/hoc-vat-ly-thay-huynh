@@ -1031,7 +1031,7 @@ import {
   Image as ImageIcon, Link as LinkIcon, Upload, Download, FileText 
 } from 'lucide-react';
 
-export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
+function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
   const quiz = db?.materials?.find(m => m.id === quizId) || { name: 'Đề kiểm tra', questions: [], quizConfig: {} };
 
   const [questions, setQuestions] = useState(quiz.questions || []);
