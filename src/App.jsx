@@ -1024,13 +1024,13 @@ function QuizPlayer({ quiz, currentUser, onFinish, onSaveResult }) {
  * Chức năng: Giáo viên biên tập câu hỏi trắc nghiệm và cấu hình phân bổ điểm.
  * ==========================================
   */
-import React, { useState, useRef } from 'react';
-import mammoth from 'mammoth';
-import { 
-  ArrowLeft, Save, Sliders, FileQuestion, Trash2, 
-  Image as ImageIcon, Link as LinkIcon, Upload, Download, FileText 
-} from 'lucide-react';
-
+/**
+ * ==========================================
+ * MODULE: SOẠN CÂU HỎI & CẤU HÌNH ĐIỂM (QuizEditor)
+ * Chức năng: Biên tập câu hỏi trắc nghiệm 3 phần chuẩn BGD,
+ * tải file mẫu & nạp trực tiếp từ file Word (.docx).
+ * ==========================================
+ */
 function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
   const quiz = db?.materials?.find(m => m.id === quizId) || { name: 'Đề kiểm tra', questions: [], quizConfig: {} };
 
@@ -1349,7 +1349,6 @@ Câu 5: Một khung dây dẫn phẳng có diện tích 20 cm^2 đặt trong t�
         className="hidden" 
       />
 
-      {/* Header thanh công cụ */}
       <div className="bg-white border-b px-6 py-4 flex flex-wrap justify-between items-center gap-3 shadow-sm sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
@@ -1389,7 +1388,6 @@ Câu 5: Một khung dây dẫn phẳng có diện tích 20 cm^2 đặt trong t�
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-6">
-        {/* Banner hướng dẫn */}
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-3">
           <FileText size={18} className="text-amber-600 mt-0.5 shrink-0" />
           <div className="text-xs text-amber-900 space-y-0.5">
@@ -1400,7 +1398,6 @@ Câu 5: Một khung dây dẫn phẳng có diện tích 20 cm^2 đặt trong t�
           </div>
         </div>
 
-        {/* Khối phân bổ điểm */}
         <div className="bg-white p-6 rounded-2xl border border-blue-200 shadow-sm space-y-4 bg-gradient-to-r from-blue-50/40 to-indigo-50/40">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-sm text-blue-900 flex items-center gap-2 uppercase tracking-wide">
@@ -1458,7 +1455,6 @@ Câu 5: Một khung dây dẫn phẳng có diện tích 20 cm^2 đặt trong t�
           </div>
         </div>
 
-        {/* Danh sách các câu hỏi */}
         {questions.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-300 p-8 space-y-3">
             <FileQuestion size={48} className="mx-auto text-gray-300"/>
@@ -1527,7 +1523,7 @@ Câu 5: Một khung dây dẫn phẳng có diện tích 20 cm^2 đặt trong t�
               </div>
 
               <div className="pt-3 border-t border-dashed border-gray-200">
-                {/* Phần 1: MCQ */}
+                {/* Phần 1: Nhiều lựa chọn */}
                 {(q.type === 'multi' || !q.type) && (
                   <div className="space-y-3">
                     <span className="block text-xs font-bold text-blue-900 uppercase tracking-wider">Các phương án trả lời (Chọn 1 đáp án đúng)</span>
@@ -1615,7 +1611,6 @@ Câu 5: Một khung dây dẫn phẳng có diện tích 20 cm^2 đặt trong t�
           ))
         )}
 
-        {/* Nút thêm câu hỏi thủ công */}
         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm text-center space-y-3">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Thêm câu hỏi mới thủ công</p>
           <div className="flex flex-wrap justify-center gap-2">
@@ -1625,7 +1620,6 @@ Câu 5: Một khung dây dẫn phẳng có diện tích 20 cm^2 đặt trong t�
           </div>
         </div>
 
-        {/* Cấu hình link đáp án/video */}
         <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-2 bg-blue-50/40">
           <label className="block text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
             <LinkIcon size={14} className="text-blue-600"/> Đường dẫn xem bài giải chi tiết / Video chữa
