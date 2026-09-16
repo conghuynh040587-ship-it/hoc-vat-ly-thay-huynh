@@ -1023,20 +1023,234 @@ function QuizPlayer({ quiz, currentUser, onFinish, onSaveResult }) {
  * MODULE: SOẠN CÂU HỎI & CẤU HÌNH ĐIỂM (QuizEditor.jsx)
  * Chức năng: Giáo viên biên tập câu hỏi trắc nghiệm và cấu hình phân bổ điểm.
  * ==========================================
-import React, { useState } from 'react';
-import { ArrowLeft, Save, Sliders, FileQuestion, Trash2, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+  */
+import React, { useState, useRef } from 'react';
+import mammoth from 'mammoth';
+import { 
+  ArrowLeft, Save, Sliders, FileQuestion, Trash2, 
+  Image as ImageIcon, Link as LinkIcon, Upload, Download, FileText 
+} from 'lucide-react';
 
 export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
-  const quiz = db.materials?.find(m => m.id === quizId) || { name: 'Đề kiểm tra', questions: [], quizConfig: {} };
+  const quiz = db?.materials?.find(m => m.id === quizId) || { name: 'Đề kiểm tra', questions: [], quizConfig: {} };
 
   const [questions, setQuestions] = useState(quiz.questions || []);
   const [answerLink, setAnswerLink] = useState(quiz.quizConfig?.answerLink || '');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef(null);
 
   const [sectionScores, setSectionScores] = useState(quiz.quizConfig?.sectionScores || {
     multiScore: 4.0,
     tfScore: 3.0,
     numScore: 3.0
   });
+
+  // Tải file mẫu cấu trúc 3 phần
+  const downloadSampleWord = () => {
+    const sampleContent = `PHẦN 1: CÂU HỎI TRẮC NGHIỆM NHIỀU LỰA CHỌN
+(Đánh dấu đáp án đúng bằng ký tự * trước chữ cái, ví dụ *A. hoặc *B.)
+
+Câu 1: Một vật dao động điều hòa theo phương trình x = 5cos(2πt) cm. Biên độ dao động của vật là:
+*A. 5 cm
+B. 10 cm
+C. 2π cm
+D. 2 cm
+
+Câu 2: Đơn vị của điện tích trong hệ SI là gì?
+A. Vôn (V)
+*B. Cu-lông (C)
+C. Ampe (A)
+D. Ôm (Ω)
+
+PHẦN 2: CÂU HỎI TRẮC NGHIỆM ĐÚNG / SAI
+(Mỗi câu gồm 4 ý a, b, c, d. Cuối mỗi ý ghi rõ [Đ] hoặc [S])
+
+Câu 3: Cho một con lắc lò xo treo thẳng đứng dao động điều hòa tự do.
+a) Gia tốc của vật luôn hướng về vị trí cân bằng. [Đ]
+b) Tại vị trí biên, lực đàn hồi tác dụng lên vật luôn có độ lớn cực tiểu. [S]
+c) Chu kỳ dao động tỉ lệ nghịch với căn bậc hai của khối lượng vật nặng. [S]
+d) Khi vật qua vị trí cân bằng, động năng của hệ đạt giá trị cực đại. [Đ]
+
+PHẦN 3: CÂU HỎI TRẢ LỜI NGẮN (ĐIỀN SỐ)
+(Ghi rõ đáp án số ở dòng 'Đáp án: <số>')
+
+Câu 4: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. Lấy g = 10 m/s^2. Vận tốc của hòn đá ngay trước khi chạm đất bằng bao nhiêu m/s?
+Đáp án: 20
+
+Câu 5: Một khung dây dẫn phẳng có diện tích 20 cm^2 đặt trong từ trường đều B = 0.05 T. Từ thông cực đại qua khung dây là bao nhiêu mWb?
+Đáp án: 0.1
+`;
+
+    const blob = new Blob([sampleContent], { type: 'application/msword;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'Mau_De_Thi_Trac_Nghiem_3_Phan.doc';
+    link.click();
+    URL.revokeObjectURL(link.href);
+    if (showToast) showToast('Đã tải file mẫu về máy thành công!');
+  };
+
+  // Parser bóc tách nội dung Word (.docx)
+  const parseRawTextToQuestions = (text) => {
+    const cleanText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const rawBlocks = cleanText.split(/(?=(?:^|\n)\s*Câu\s+\d+[\s.:])/i);
+    const parsed = [];
+
+    for (const block of rawBlocks) {
+      const trimmed = block.trim();
+      if (!trimmed.match(/^Câu\s+\d+/i)) continue;
+
+      const hasOptions = /[A-D]\s*[.):]/i.test(trimmed);
+      const hasTF = /[a-d]\s*[.):].*?\[(Đ|S|Đúng|Sai)\]/i.test(trimmed);
+      const hasAnswerNumber = /(?:Đáp án|ĐA|KQ)\s*[:=]\s*[-+]?[0-9]+(?:[.,][0-9]+)?/i.test(trimmed);
+
+      // Phần 2: Đúng / Sai
+      if (hasTF) {
+        const lines = trimmed.split('\n').map(l => l.trim()).filter(Boolean);
+        const contentLines = [];
+        const tfStatements = [
+          { text: '', isTrue: true },
+          { text: '', isTrue: false },
+          { text: '', isTrue: true },
+          { text: '', isTrue: false }
+        ];
+
+        for (const line of lines) {
+          const match = line.match(/^([a-d])\s*[.):]\s*(.*?)\s*\[(Đ|S|Đúng|Sai)\]\s*$/i);
+          if (match) {
+            const letter = match[1].toLowerCase();
+            const statementText = match[2].trim();
+            const isCorrect = /^(Đ|Đúng)$/i.test(match[3]);
+            const indexMap = { a: 0, b: 1, c: 2, d: 3 };
+            if (indexMap[letter] !== undefined) {
+              tfStatements[indexMap[letter]] = { text: statementText, isTrue: isCorrect };
+            }
+          } else {
+            contentLines.push(line);
+          }
+        }
+
+        const fullContent = contentLines.join(' ').replace(/^Câu\s+\d+[\s.:]\s*/i, '').trim();
+
+        parsed.push({
+          id: `q_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          type: 'truefalse',
+          content: fullContent,
+          imageLink: '',
+          options: ['', '', '', ''],
+          answerMCQ: 'A',
+          tfStatements,
+          answerNumDot: '',
+          answerNumComma: '',
+          answerShort: ''
+        });
+      } 
+      // Phần 3: Điền số
+      else if (hasAnswerNumber) {
+        const numMatch = trimmed.match(/(?:Đáp án|ĐA|KQ)\s*[:=]\s*([-+]?[0-9]+(?:[.,][0-9]+)?)/i);
+        const rawNum = numMatch ? numMatch[1].trim() : '';
+        const dotVer = rawNum.replace(',', '.');
+        const commaVer = rawNum.replace('.', ',');
+
+        const contentClean = trimmed
+          .replace(/(?:Đáp án|ĐA|KQ)\s*[:=].*$/im, '')
+          .replace(/^Câu\s+\d+[\s.:]\s*/i, '')
+          .trim();
+
+        parsed.push({
+          id: `q_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          type: 'number',
+          content: contentClean,
+          imageLink: '',
+          options: ['', '', '', ''],
+          answerMCQ: 'A',
+          tfStatements: [
+            { text: '', isTrue: true },
+            { text: '', isTrue: false },
+            { text: '', isTrue: true },
+            { text: '', isTrue: false }
+          ],
+          answerNumDot: dotVer,
+          answerNumComma: commaVer,
+          answerShort: dotVer
+        });
+      }
+      // Phần 1: Nhiều lựa chọn
+      else if (hasOptions) {
+        const lines = trimmed.split('\n').map(l => l.trim()).filter(Boolean);
+        const contentLines = [];
+        const options = ['', '', '', ''];
+        let answerMCQ = 'A';
+
+        for (const line of lines) {
+          const optMatch = line.match(/^(\*?)([A-D])(\*?)\s*[.):]\s*(.*)$/i);
+          if (optMatch) {
+            const isStar = optMatch[1] === '*' || optMatch[3] === '*';
+            const char = optMatch[2].toUpperCase();
+            const textContent = optMatch[4].trim();
+            const charIndex = { A: 0, B: 1, C: 2, D: 3 }[char];
+
+            if (charIndex !== undefined) {
+              options[charIndex] = textContent;
+              if (isStar) answerMCQ = char;
+            }
+          } else {
+            contentLines.push(line);
+          }
+        }
+
+        const fullContent = contentLines.join(' ').replace(/^Câu\s+\d+[\s.:]\s*/i, '').trim();
+
+        parsed.push({
+          id: `q_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          type: 'multi',
+          content: fullContent,
+          imageLink: '',
+          options,
+          answerMCQ,
+          tfStatements: [
+            { text: '', isTrue: true },
+            { text: '', isTrue: false },
+            { text: '', isTrue: true },
+            { text: '', isTrue: false }
+          ],
+          answerNumDot: '',
+          answerNumComma: '',
+          answerShort: ''
+        });
+      }
+    }
+
+    return parsed;
+  };
+
+  // Nạp file Word
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessing(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      const rawText = result.value;
+
+      const extractedQuestions = parseRawTextToQuestions(rawText);
+
+      if (extractedQuestions.length === 0) {
+        alert('Không tìm thấy cấu trúc câu hỏi hợp lệ trong file. Vui lòng tải file mẫu để xem cú pháp chuẩn!');
+      } else {
+        setQuestions(prev => [...prev, ...extractedQuestions]);
+        if (showToast) showToast(`Đã nhập thành công ${extractedQuestions.length} câu hỏi từ file!`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Đã xảy ra lỗi khi đọc file Word (.docx). Vui lòng kiểm tra lại file!');
+    } finally {
+      setIsProcessing(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const addQuestion = (type) => {
     const newQ = {
@@ -1050,7 +1264,7 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
         { text: '', isTrue: true },
         { text: '', isTrue: false },
         { text: '', isTrue: true },
-        { text: '', isTrue: false },
+        { text: '', isTrue: false }
       ],
       answerNumDot: '',
       answerNumComma: '',
@@ -1059,12 +1273,10 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
     setQuestions(prev => [...prev, newQ]);
   };
 
-  // Cập nhật trường dữ liệu dạng Deep Copy an toàn
   const updateQuestionField = (index, field, value) => {
     setQuestions(prev => prev.map((q, i) => i === index ? { ...q, [field]: value } : q));
   };
 
-  // Tự động đồng bộ dấu chấm và phẩy cho câu hỏi số
   const handleNumericAnswerChange = (index, rawValue) => {
     const sanitized = rawValue.replace(/[^0-9.,-]/g, '');
     const dotVer = sanitized.replace(',', '.');
@@ -1072,11 +1284,7 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
     
     setQuestions(prev => prev.map((q, i) => {
       if (i !== index) return q;
-      return {
-        ...q,
-        answerNumDot: dotVer,
-        answerNumComma: commaVer
-      };
+      return { ...q, answerNumDot: dotVer, answerNumComma: commaVer };
     }));
   };
 
@@ -1106,7 +1314,7 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
   };
 
   const handleSaveAll = () => {
-    const updatedMaterials = (db.materials || []).map(m => {
+    const updatedMaterials = (db?.materials || []).map(m => {
       if (m.id === quizId) {
         return {
           ...m,
@@ -1133,8 +1341,16 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
 
   return (
     <div className="h-full flex flex-col bg-gray-100 font-sans">
-      {/* Header */}
-      <div className="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-20">
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileUpload} 
+        accept=".docx" 
+        className="hidden" 
+      />
+
+      {/* Header thanh công cụ */}
+      <div className="bg-white border-b px-6 py-4 flex flex-wrap justify-between items-center gap-3 shadow-sm sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
             <ArrowLeft size={20}/>
@@ -1142,20 +1358,49 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
           <div>
             <h2 className="text-base font-bold text-gray-900">Biên tập: {quiz.name}</h2>
             <p className="text-xs text-gray-500">
-              Tổng số câu: <strong className="text-blue-600">{questions.length} câu</strong> | Tổng điểm phân bổ: <strong className={Number(totalConfiguredScore) === 10 ? "text-emerald-600" : "text-amber-600"}>{totalConfiguredScore}/10 đ</strong>
+              Tổng số câu: <strong className="text-blue-600">{questions.length} câu</strong> | Tổng điểm: <strong className={Number(totalConfiguredScore) === 10 ? "text-emerald-600" : "text-amber-600"}>{totalConfiguredScore}/10 đ</strong>
             </p>
           </div>
         </div>
-        <button 
-          onClick={handleSaveAll} 
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition-transform active:scale-95"
-        >
-          <Save size={16}/> Lưu thay đổi
-        </button>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={downloadSampleWord}
+            className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+          >
+            <Download size={15} className="text-blue-600"/> Tải file mẫu
+          </button>
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isProcessing}
+            className="border border-blue-600 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+          >
+            <Upload size={15}/> {isProcessing ? 'Đang đọc...' : 'Nhập từ Word (.docx)'}
+          </button>
+
+          <button 
+            onClick={handleSaveAll} 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-bold text-xs shadow flex items-center gap-1.5 transition-transform active:scale-95"
+          >
+            <Save size={15}/> Lưu thay đổi
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-6">
-        {/* Phân bổ điểm */}
+        {/* Banner hướng dẫn */}
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-3">
+          <FileText size={18} className="text-amber-600 mt-0.5 shrink-0" />
+          <div className="text-xs text-amber-900 space-y-0.5">
+            <p className="font-bold">Mẹo soạn đề nhanh từ Word:</p>
+            <p className="text-amber-800">
+              Bấm <strong>"Tải file mẫu"</strong> để chuẩn hóa nội dung đề: dùng dấu <strong>*</strong> trước phương án đúng (TN 4 lựa chọn), gắn <strong>[Đ]</strong> hoặc <strong>[S]</strong> cho từng ý (Đúng/Sai), hoặc ghi <strong>Đáp án: &lt;số&gt;</strong> (Điền số).
+            </p>
+          </div>
+        </div>
+
+        {/* Khối phân bổ điểm */}
         <div className="bg-white p-6 rounded-2xl border border-blue-200 shadow-sm space-y-4 bg-gradient-to-r from-blue-50/40 to-indigo-50/40">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-sm text-blue-900 flex items-center gap-2 uppercase tracking-wide">
@@ -1213,12 +1458,28 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
           </div>
         </div>
 
-        {/* Danh sách câu hỏi */}
+        {/* Danh sách các câu hỏi */}
         {questions.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-300 p-8">
-            <FileQuestion size={48} className="mx-auto text-gray-300 mb-3"/>
-            <p className="text-gray-600 font-bold mb-1">Chưa có câu hỏi nào trong đề này.</p>
-            <p className="text-xs text-gray-400">Bấm vào các nút bên dưới để bắt đầu soạn đề.</p>
+          <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-300 p-8 space-y-3">
+            <FileQuestion size={48} className="mx-auto text-gray-300"/>
+            <div>
+              <p className="text-gray-700 font-bold">Chưa có câu hỏi nào trong đề thi.</p>
+              <p className="text-xs text-gray-400">Thầy/Cô có thể tải file mẫu để nạp hàng loạt từ file Word hoặc tạo thủ công từng câu.</p>
+            </div>
+            <div className="pt-2 flex justify-center gap-3">
+              <button 
+                onClick={downloadSampleWord}
+                className="px-4 py-2 border rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-1.5"
+              >
+                <Download size={14}/> Tải file mẫu
+              </button>
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 flex items-center gap-1.5 shadow-sm"
+              >
+                <Upload size={14}/> Chọn file Word nạp đề
+              </button>
+            </div>
           </div>
         ) : (
           questions.map((q, qIndex) => (
@@ -1266,7 +1527,7 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
               </div>
 
               <div className="pt-3 border-t border-dashed border-gray-200">
-                {/* Phần 1: Trắc nghiệm 4 lựa chọn */}
+                {/* Phần 1: MCQ */}
                 {(q.type === 'multi' || !q.type) && (
                   <div className="space-y-3">
                     <span className="block text-xs font-bold text-blue-900 uppercase tracking-wider">Các phương án trả lời (Chọn 1 đáp án đúng)</span>
@@ -1289,7 +1550,7 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                   </div>
                 )}
 
-                {/* Phần 2: Đúng / Sai 4 ý */}
+                {/* Phần 2: Đúng / Sai */}
                 {q.type === 'truefalse' && (
                   <div className="space-y-3">
                     <span className="block text-xs font-bold text-indigo-900 uppercase tracking-wider">Phát biểu Đúng / Sai (4 ý a, b, c, d)</span>
@@ -1301,7 +1562,7 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                           value={stmt.text}
                           onChange={(e) => updateTfStatement(qIndex, sIdx, 'text', e.target.value)}
                           placeholder={`Nhập nội dung ý ${['a', 'b', 'c', 'd'][sIdx]}...`}
-                          className="flex-1 w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-200 focus:outline-none focus:ring-1 focus:indigo-500 text-sm font-medium"
+                          className="flex-1 w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm font-medium"
                         />
                         <div className="flex items-center gap-2 shrink-0">
                           <label className={`px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-colors ${stmt.isTrue ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300'}`}>
@@ -1318,7 +1579,7 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                   </div>
                 )}
 
-                {/* Phần 3: Trả lời ngắn / Điền số */}
+                {/* Phần 3: Điền số */}
                 {q.type === 'number' && (
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
                     <div className="flex justify-between items-center">
@@ -1354,9 +1615,9 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
           ))
         )}
 
-        {/* Nút thêm câu hỏi */}
+        {/* Nút thêm câu hỏi thủ công */}
         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm text-center space-y-3">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Thêm câu hỏi mới vào đề thi</p>
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Thêm câu hỏi mới thủ công</p>
           <div className="flex flex-wrap justify-center gap-2">
             <button onClick={() => addQuestion('multi')} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-transform active:scale-95">+ Trắc nghiệm nhiều lựa chọn</button>
             <button onClick={() => addQuestion('truefalse')} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-transform active:scale-95">+ Trắc nghiệm Đúng / Sai</button>
@@ -1364,7 +1625,7 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
           </div>
         </div>
 
-        {/* Link đáp án */}
+        {/* Cấu hình link đáp án/video */}
         <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-2 bg-blue-50/40">
           <label className="block text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
             <LinkIcon size={14} className="text-blue-600"/> Đường dẫn xem bài giải chi tiết / Video chữa
@@ -1381,7 +1642,6 @@ export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
     </div>
   );
 }
-
 /**
  * ==========================================
  * MODULE: QUẢN LÝ LỚP & HỌC SINH (ClassManagement.jsx)
