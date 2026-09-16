@@ -1,8 +1,3 @@
-import mammoth from 'mammoth';
-import { 
-  ArrowLeft, Save, Sliders, FileQuestion, Trash2, 
-  Image as ImageIcon, Link as LinkIcon, Upload, Download, FileText 
-} from 'lucide-react';
 /**
  * ==========================================
  * NỀN TẢNG QUẢN LÝ VÀ HỌC TẬP MÔN VẬT LÍ
@@ -1029,15 +1024,15 @@ function QuizPlayer({ quiz, currentUser, onFinish, onSaveResult }) {
  * Chức năng: Giáo viên biên tập câu hỏi trắc nghiệm và cấu hình phân bổ điểm.
  * ==========================================
   */
-/**
- * ==========================================
- * MODULE: SOẠN CÂU HỎI & CẤU HÌNH ĐIỂM (QuizEditor)
- * Chức năng: Biên tập câu hỏi trắc nghiệm 3 phần chuẩn BGD,
- * tải file mẫu & nạp trực tiếp từ file Word (.docx).
- * ==========================================
- */
-function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
-  // Đảm bảo luôn có object an toàn ngay cả khi db hoặc materials rỗng
+import React, { useState, useRef } from 'react';
+import mammoth from 'mammoth';
+import { 
+  ArrowLeft, Save, Sliders, FileQuestion, Trash2, 
+  Image as ImageIcon, Link as LinkIcon, Upload, Download, FileText 
+} from 'lucide-react';
+
+export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
+  // Chống crash màn hình đen nếu db/materials chưa sẵn sàng
   const quiz = (db?.materials || []).find(m => m.id === quizId) || {
     id: quizId || 'temp_id',
     name: 'Đề kiểm tra',
@@ -1056,6 +1051,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
     numScore: quiz.quizConfig?.sectionScores?.numScore ?? 3.0
   });
 
+  // Tải file Word mẫu cấu trúc 3 phần
   const downloadSampleWord = () => {
     const sampleContent = `PHẦN 1: CÂU HỎI TRẮC NGHIỆM NHIỀU LỰA CHỌN
 (Đánh dấu đáp án đúng bằng ký tự * trước chữ cái, ví dụ *A. hoặc *B.)
@@ -1091,6 +1087,7 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
     if (showToast) showToast('Đã tải file mẫu về máy thành công!');
   };
 
+  // Parser bóc tách nội dung Word (.docx)
   const parseRawTextToQuestions = (text) => {
     const cleanText = (text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const rawBlocks = cleanText.split(/(?=(?:^|\n)\s*Câu\s+\d+[\s.:])/i);
@@ -1212,11 +1209,6 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (typeof mammoth === 'undefined') {
-      alert('Thư viện mammoth chưa được tải. Vui lòng cài đặt: npm install mammoth');
-      return;
-    }
-
     setIsProcessing(true);
     try {
       const arrayBuffer = await file.arrayBuffer();
@@ -1224,14 +1216,14 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
       const extracted = parseRawTextToQuestions(result.value);
 
       if (extracted.length === 0) {
-        alert('Không tìm thấy câu hỏi hợp lệ trong file!');
+        alert('Không tìm thấy cấu trúc câu hỏi hợp lệ trong file. Vui lòng tải file mẫu để xem định dạng!');
       } else {
         setQuestions(prev => [...prev, ...extracted]);
         if (showToast) showToast(`Đã nhập thành công ${extracted.length} câu hỏi!`);
       }
     } catch (err) {
       console.error(err);
-      alert('Lỗi khi đọc file Word (.docx). Vui lòng thử lại!');
+      alert('Lỗi đọc file Word (.docx). Vui lòng thử lại!');
     } finally {
       setIsProcessing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -1375,7 +1367,7 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
           </div>
         </div>
 
-        {/* Cấu hình phân bổ điểm */}
+        {/* Khối phân bổ điểm */}
         <div className="bg-white p-6 rounded-2xl border border-blue-200 shadow-sm space-y-4 bg-gradient-to-r from-blue-50/40 to-indigo-50/40">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-sm text-blue-900 flex items-center gap-2 uppercase tracking-wide">
@@ -1529,7 +1521,7 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
                           value={stmt.text || ''}
                           onChange={(e) => updateTfStatement(qIndex, sIdx, 'text', e.target.value)}
                           placeholder={`Nhập nội dung ý ${['a', 'b', 'c', 'd'][sIdx]}...`}
-                          className="flex-1 w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm font-medium"
+                          className="flex-1 w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-200 focus:outline-none focus:ring-1 focus:indigo-500 text-sm font-medium"
                         />
                         <div className="flex items-center gap-2 shrink-0">
                           <label className={`px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-colors ${stmt.isTrue ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300'}`}>
@@ -1581,7 +1573,7 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
           ))
         )}
 
-        {/* Nút thêm câu hỏi thủ công */}
+        {/* Nút thêm câu hỏi */}
         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm text-center space-y-3">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Thêm câu hỏi mới thủ công</p>
           <div className="flex flex-wrap justify-center gap-2">
@@ -1591,7 +1583,7 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
           </div>
         </div>
 
-        {/* Cấu hình link đáp án */}
+        {/* Link đáp án */}
         <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-2 bg-blue-50/40">
           <label className="block text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
             <LinkIcon size={14} className="text-blue-600"/> Đường dẫn xem bài giải chi tiết / Video chữa
