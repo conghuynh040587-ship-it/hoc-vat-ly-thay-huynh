@@ -1024,278 +1024,74 @@ function QuizPlayer({ quiz, currentUser, onFinish, onSaveResult }) {
  * Chức năng: Giáo viên biên tập câu hỏi trắc nghiệm và cấu hình phân bổ điểm.
  * ==========================================
   */
-import React, { useState, useRef } from 'react';
-import mammoth from 'mammoth';
-import { 
-  ArrowLeft, Save, Sliders, FileQuestion, Trash2, 
-  Image as ImageIcon, Link as LinkIcon, Upload, Download, FileText 
-} from 'lucide-react';
-
-export default function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
-  // Chống crash màn hình đen nếu db/materials chưa sẵn sàng
-  const quiz = (db?.materials || []).find(m => m.id === quizId) || {
-    id: quizId || 'temp_id',
-    name: 'Đề kiểm tra',
-    questions: [],
-    quizConfig: { answerLink: '', sectionScores: { multiScore: 4.0, tfScore: 3.0, numScore: 3.0 } }
-  };
-
-  const [questions, setQuestions] = useState(Array.isArray(quiz.questions) ? quiz.questions : []);
+function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
+  const quiz = db.materials?.find(m => m.id === quizId) || { name: 'Đề kiểm tra', questions: [], quizConfig: {} };
+  
+  const [questions, setQuestions] = useState(quiz.questions || []);
   const [answerLink, setAnswerLink] = useState(quiz.quizConfig?.answerLink || '');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const fileInputRef = useRef(null);
 
-  const [sectionScores, setSectionScores] = useState({
-    multiScore: quiz.quizConfig?.sectionScores?.multiScore ?? 4.0,
-    tfScore: quiz.quizConfig?.sectionScores?.tfScore ?? 3.0,
-    numScore: quiz.quizConfig?.sectionScores?.numScore ?? 3.0
+  const [sectionScores, setSectionScores] = useState(quiz.quizConfig?.sectionScores || {
+    multiScore: 4.0, 
+    tfScore: 3.0,     
+    numScore: 3.0     
   });
-
-  // Tải file Word mẫu cấu trúc 3 phần
-  const downloadSampleWord = () => {
-    const sampleContent = `PHẦN 1: CÂU HỎI TRẮC NGHIỆM NHIỀU LỰA CHỌN
-(Đánh dấu đáp án đúng bằng ký tự * trước chữ cái, ví dụ *A. hoặc *B.)
-
-Câu 1: Một vật dao động điều hòa theo phương trình x = 5cos(2πt) cm. Biên độ dao động của vật là:
-*A. 5 cm
-B. 10 cm
-C. 2π cm
-D. 2 cm
-
-PHẦN 2: CÂU HỎI TRẮC NGHIỆM ĐÚNG / SAI
-(Mỗi câu gồm 4 ý a, b, c, d. Cuối mỗi ý ghi rõ [Đ] hoặc [S])
-
-Câu 2: Cho một con lắc lò xo treo thẳng đứng dao động điều hòa tự do.
-a) Gia tốc của vật luôn hướng về vị trí cân bằng. [Đ]
-b) Tại vị trí biên, lực đàn hồi tác dụng lên vật luôn có độ lớn cực tiểu. [S]
-c) Chu kỳ dao động tỉ lệ nghịch với căn bậc hai của khối lượng vật nặng. [S]
-d) Khi vật qua vị trí cân bằng, động năng của hệ đạt giá trị cực đại. [Đ]
-
-PHẦN 3: CÂU HỎI TRẢ LỜI NGẮN (ĐIỀN SỐ)
-(Ghi rõ đáp án số ở dòng 'Đáp án: <số>')
-
-Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. Lấy g = 10 m/s^2. Vận tốc của hòn đá ngay trước khi chạm đất bằng bao nhiêu m/s?
-Đáp án: 20
-`;
-
-    const blob = new Blob([sampleContent], { type: 'application/msword;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'Mau_De_Thi_Trac_Nghiem_3_Phan.doc';
-    link.click();
-    URL.revokeObjectURL(link.href);
-    if (showToast) showToast('Đã tải file mẫu về máy thành công!');
-  };
-
-  // Parser bóc tách nội dung Word (.docx)
-  const parseRawTextToQuestions = (text) => {
-    const cleanText = (text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    const rawBlocks = cleanText.split(/(?=(?:^|\n)\s*Câu\s+\d+[\s.:])/i);
-    const parsed = [];
-
-    for (const block of rawBlocks) {
-      const trimmed = block.trim();
-      if (!trimmed.match(/^Câu\s+\d+/i)) continue;
-
-      const hasOptions = /[A-D]\s*[.):]/i.test(trimmed);
-      const hasTF = /[a-d]\s*[.):].*?\[(Đ|S|Đúng|Sai)\]/i.test(trimmed);
-      const hasAnswerNumber = /(?:Đáp án|ĐA|KQ)\s*[:=]\s*[-+]?[0-9]+(?:[.,][0-9]+)?/i.test(trimmed);
-
-      if (hasTF) {
-        const lines = trimmed.split('\n').map(l => l.trim()).filter(Boolean);
-        const contentLines = [];
-        const tfStatements = [
-          { text: '', isTrue: true },
-          { text: '', isTrue: false },
-          { text: '', isTrue: true },
-          { text: '', isTrue: false }
-        ];
-
-        for (const line of lines) {
-          const match = line.match(/^([a-d])\s*[.):]\s*(.*?)\s*\[(Đ|S|Đúng|Sai)\]\s*$/i);
-          if (match) {
-            const letter = match[1].toLowerCase();
-            const statementText = match[2].trim();
-            const isCorrect = /^(Đ|Đúng)$/i.test(match[3]);
-            const indexMap = { a: 0, b: 1, c: 2, d: 3 };
-            if (indexMap[letter] !== undefined) {
-              tfStatements[indexMap[letter]] = { text: statementText, isTrue: isCorrect };
-            }
-          } else {
-            contentLines.push(line);
-          }
-        }
-
-        parsed.push({
-          id: `q_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          type: 'truefalse',
-          content: contentLines.join(' ').replace(/^Câu\s+\d+[\s.:]\s*/i, '').trim(),
-          imageLink: '',
-          options: ['', '', '', ''],
-          answerMCQ: 'A',
-          tfStatements,
-          answerNumDot: '',
-          answerNumComma: '',
-          answerShort: ''
-        });
-      } else if (hasAnswerNumber) {
-        const numMatch = trimmed.match(/(?:Đáp án|ĐA|KQ)\s*[:=]\s*([-+]?[0-9]+(?:[.,][0-9]+)?)/i);
-        const rawNum = numMatch ? numMatch[1].trim() : '';
-        const dotVer = rawNum.replace(',', '.');
-        const commaVer = rawNum.replace('.', ',');
-
-        parsed.push({
-          id: `q_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          type: 'number',
-          content: trimmed.replace(/(?:Đáp án|ĐA|KQ)\s*[:=].*$/im, '').replace(/^Câu\s+\d+[\s.:]\s*/i, '').trim(),
-          imageLink: '',
-          options: ['', '', '', ''],
-          answerMCQ: 'A',
-          tfStatements: [
-            { text: '', isTrue: true },
-            { text: '', isTrue: false },
-            { text: '', isTrue: true },
-            { text: '', isTrue: false }
-          ],
-          answerNumDot: dotVer,
-          answerNumComma: commaVer,
-          answerShort: dotVer
-        });
-      } else if (hasOptions) {
-        const lines = trimmed.split('\n').map(l => l.trim()).filter(Boolean);
-        const contentLines = [];
-        const options = ['', '', '', ''];
-        let answerMCQ = 'A';
-
-        for (const line of lines) {
-          const optMatch = line.match(/^(\*?)([A-D])(\*?)\s*[.):]\s*(.*)$/i);
-          if (optMatch) {
-            const isStar = optMatch[1] === '*' || optMatch[3] === '*';
-            const char = optMatch[2].toUpperCase();
-            const textContent = optMatch[4].trim();
-            const charIndex = { A: 0, B: 1, C: 2, D: 3 }[char];
-            if (charIndex !== undefined) {
-              options[charIndex] = textContent;
-              if (isStar) answerMCQ = char;
-            }
-          } else {
-            contentLines.push(line);
-          }
-        }
-
-        parsed.push({
-          id: `q_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          type: 'multi',
-          content: contentLines.join(' ').replace(/^Câu\s+\d+[\s.:]\s*/i, '').trim(),
-          imageLink: '',
-          options,
-          answerMCQ,
-          tfStatements: [
-            { text: '', isTrue: true },
-            { text: '', isTrue: false },
-            { text: '', isTrue: true },
-            { text: '', isTrue: false }
-          ],
-          answerNumDot: '',
-          answerNumComma: '',
-          answerShort: ''
-        });
-      }
-    }
-    return parsed;
-  };
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsProcessing(true);
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      const extracted = parseRawTextToQuestions(result.value);
-
-      if (extracted.length === 0) {
-        alert('Không tìm thấy cấu trúc câu hỏi hợp lệ trong file. Vui lòng tải file mẫu để xem định dạng!');
-      } else {
-        setQuestions(prev => [...prev, ...extracted]);
-        if (showToast) showToast(`Đã nhập thành công ${extracted.length} câu hỏi!`);
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Lỗi đọc file Word (.docx). Vui lòng thử lại!');
-    } finally {
-      setIsProcessing(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
 
   const addQuestion = (type) => {
     const newQ = {
-      id: `q_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      type: type,
-      content: '',
-      imageLink: '',
+      id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      type: type, 
+      content: '',       
+      imageLink: '',     
       options: ['', '', '', ''],
       answerMCQ: 'A',
       tfStatements: [
         { text: '', isTrue: true },
         { text: '', isTrue: false },
         { text: '', isTrue: true },
-        { text: '', isTrue: false }
+        { text: '', isTrue: false },
       ],
-      answerNumDot: '',
-      answerNumComma: '',
+      answerNumDot: '',    
+      answerNumComma: '',  
       answerShort: ''
     };
-    setQuestions(prev => [...prev, newQ]);
+    setQuestions([...questions, newQ]);
   };
 
   const updateQuestionField = (index, field, value) => {
-    setQuestions(prev => prev.map((q, i) => i === index ? { ...q, [field]: value } : q));
-  };
-
-  const handleNumericAnswerChange = (index, rawValue) => {
-    const sanitized = rawValue.replace(/[^0-9.,-]/g, '');
-    const dotVer = sanitized.replace(',', '.');
-    const commaVer = sanitized.replace('.', ',');
-    setQuestions(prev => prev.map((q, i) => i === index ? { ...q, answerNumDot: dotVer, answerNumComma: commaVer } : q));
+    const updated = [...questions];
+    updated[index][field] = value;
+    setQuestions(updated);
   };
 
   const updateOptionText = (qIndex, optIndex, value) => {
-    setQuestions(prev => prev.map((q, i) => {
-      if (i !== qIndex) return q;
-      const newOptions = [...(q.options || ['', '', '', ''])];
-      newOptions[optIndex] = value;
-      return { ...q, options: newOptions };
-    }));
+    const updated = [...questions];
+    if (!updated[qIndex].options) updated[qIndex].options = ['', '', '', ''];
+    updated[qIndex].options[optIndex] = value;
+    setQuestions(updated);
   };
 
   const updateTfStatement = (qIndex, stmtIndex, field, value) => {
-    setQuestions(prev => prev.map((q, i) => {
-      if (i !== qIndex) return q;
-      const newStmts = (q.tfStatements || []).map((stmt, sIdx) => sIdx === stmtIndex ? { ...stmt, [field]: value } : stmt);
-      return { ...q, tfStatements: newStmts };
-    }));
+    const updated = [...questions];
+    updated[qIndex].tfStatements[stmtIndex][field] = value;
+    setQuestions(updated);
   };
 
   const removeQuestion = (index) => {
-    if (window.confirm('Thầy/Cô có chắc chắn muốn xóa câu hỏi này không?')) {
-      setQuestions(prev => prev.filter((_, i) => i !== index));
+    if (window.confirm('Thầy có chắc chắn muốn xóa câu hỏi này không?')) {
+      setQuestions(questions.filter((_, i) => i !== index));
     }
   };
 
   const handleSaveAll = () => {
-    const currentMaterials = Array.isArray(db?.materials) ? db.materials : [];
-    const updatedMaterials = currentMaterials.map(m => {
+    const updatedMaterials = db.materials.map(m => {
       if (m.id === quizId) {
         return {
           ...m,
-          questions,
-          quizConfig: {
-            ...(m.quizConfig || {}),
+          questions: questions,
+          quizConfig: { 
+            ...m.quizConfig, 
             answerLink,
-            sectionScores
+            sectionScores 
           }
         };
       }
@@ -1303,85 +1099,41 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
     });
 
     setDb({ ...db, materials: updatedMaterials });
-    if (showToast) showToast('Đã lưu cấu hình điểm và đề thi thành công!');
-    if (onClose) onClose();
+    showToast('Đã lưu cấu hình điểm và đề thi thành công!');
+    onClose();
   };
 
   const countMulti = questions.filter(q => q.type === 'multi' || !q.type).length;
   const countTf = questions.filter(q => q.type === 'truefalse').length;
   const countNum = questions.filter(q => q.type === 'number').length;
-  const totalConfiguredScore = (sectionScores.multiScore + sectionScores.tfScore + sectionScores.numScore).toFixed(2);
 
   return (
-    <div className="h-full flex flex-col bg-gray-100 font-sans text-gray-900">
-      <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".docx" className="hidden" />
-
-      {/* Header */}
-      <div className="bg-white border-b px-6 py-4 flex flex-wrap justify-between items-center gap-3 shadow-sm sticky top-0 z-20">
+    <div className="h-full flex flex-col bg-gray-100 font-sans">
+      <div className="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
             <ArrowLeft size={20}/>
           </button>
           <div>
-            <h2 className="text-base font-bold text-gray-900">Biên tập: {quiz.name}</h2>
-            <p className="text-xs text-gray-500">
-              Tổng số câu: <strong className="text-blue-600">{questions.length} câu</strong> | Tổng điểm: <strong className={Number(totalConfiguredScore) === 10 ? "text-emerald-600" : "text-amber-600"}>{totalConfiguredScore}/10 đ</strong>
-            </p>
+            <h2 className="text-base font-bold text-gray-900">Biên tập câu hỏi & Cấu hình điểm: {quiz.name}</h2>
+            <p className="text-xs text-gray-500">Tổng số câu: <strong className="text-blue-600">{questions.length} câu</strong></p>
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={downloadSampleWord}
-            className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
-          >
-            <Download size={15} className="text-blue-600"/> Tải file mẫu
-          </button>
-
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isProcessing}
-            className="border border-blue-600 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
-          >
-            <Upload size={15}/> {isProcessing ? 'Đang đọc...' : 'Nhập từ Word (.docx)'}
-          </button>
-
-          <button 
-            onClick={handleSaveAll} 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-bold text-xs shadow flex items-center gap-1.5 transition-transform active:scale-95"
-          >
-            <Save size={15}/> Lưu thay đổi
-          </button>
-        </div>
+        <button 
+          onClick={handleSaveAll} 
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition-transform active:scale-95"
+        >
+          <Save size={16}/> Lưu thay đổi
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-6">
-        {/* Banner hướng dẫn */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-3">
-          <FileText size={18} className="text-amber-600 mt-0.5 shrink-0" />
-          <div className="text-xs text-amber-900 space-y-0.5">
-            <p className="font-bold">Mẹo soạn đề nhanh từ Word:</p>
-            <p className="text-amber-800">
-              Bấm <strong>"Tải file mẫu"</strong> để chuẩn hóa nội dung: đặt dấu <strong>*</strong> trước phương án đúng (TN 4 lựa chọn), gắn <strong>[Đ]</strong> hoặc <strong>[S]</strong> cho từng ý (Đúng/Sai), hoặc ghi <strong>Đáp án: &lt;số&gt;</strong> (Điền số).
-            </p>
-          </div>
-        </div>
-
-        {/* Khối phân bổ điểm */}
-        <div className="bg-white p-6 rounded-2xl border border-blue-200 shadow-sm space-y-4 bg-gradient-to-r from-blue-50/40 to-indigo-50/40">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-sm text-blue-900 flex items-center gap-2 uppercase tracking-wide">
-              <Sliders size={18} className="text-blue-600"/> Cấu hình phân bổ điểm số đề thi (Thang 10)
-            </h3>
-            {Number(totalConfiguredScore) !== 10 && (
-              <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
-                Chưa đủ/vượt 10 điểm
-              </span>
-            )}
-          </div>
-
+        <div className="bg-white p-6 rounded-2xl border border-blue-200 shadow-sm space-y-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
+          <h3 className="font-bold text-sm text-blue-900 flex items-center gap-2 uppercase tracking-wide">
+            <Sliders size={18} className="text-blue-600"/> Cấu hình phân bổ điểm số đề thi (Thang 10)
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-1">
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs space-y-1">
               <label className="block text-xs font-bold text-gray-700">Phần 1: Nhiều lựa chọn</label>
               <p className="text-xs text-gray-400">Số câu: {countMulti} | Mỗi câu: {countMulti > 0 ? (sectionScores.multiScore / countMulti).toFixed(2) : 0} đ</p>
               <div className="flex items-center gap-2 pt-1">
@@ -1389,13 +1141,13 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
                   type="number" step="0.25" min="0" max="10"
                   value={sectionScores.multiScore}
                   onChange={(e) => setSectionScores({ ...sectionScores, multiScore: parseFloat(e.target.value) || 0 })}
-                  className="w-full p-2 border rounded-lg text-sm font-bold text-blue-700 bg-gray-50 outline-none focus:bg-white focus:ring-1 focus:ring-blue-500"
+                  className="w-full p-2 border rounded-lg text-sm font-bold text-blue-700 bg-gray-50 outline-none"
                 />
                 <span className="text-xs font-bold text-gray-500">điểm</span>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-1">
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs space-y-1">
               <label className="block text-xs font-bold text-gray-700">Phần 2: Đúng / Sai</label>
               <p className="text-xs text-gray-400">Số câu: {countTf} (Chấm theo % ý)</p>
               <div className="flex items-center gap-2 pt-1">
@@ -1403,13 +1155,13 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
                   type="number" step="0.25" min="0" max="10"
                   value={sectionScores.tfScore}
                   onChange={(e) => setSectionScores({ ...sectionScores, tfScore: parseFloat(e.target.value) || 0 })}
-                  className="w-full p-2 border rounded-lg text-sm font-bold text-indigo-700 bg-gray-50 outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500"
+                  className="w-full p-2 border rounded-lg text-sm font-bold text-indigo-700 bg-gray-50 outline-none"
                 />
                 <span className="text-xs font-bold text-gray-500">điểm</span>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-1">
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs space-y-1">
               <label className="block text-xs font-bold text-gray-700">Phần 3: Điền số</label>
               <p className="text-xs text-gray-400">Số câu: {countNum} | Mỗi câu: {countNum > 0 ? (sectionScores.numScore / countNum).toFixed(2) : 0} đ</p>
               <div className="flex items-center gap-2 pt-1">
@@ -1417,7 +1169,7 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
                   type="number" step="0.25" min="0" max="10"
                   value={sectionScores.numScore}
                   onChange={(e) => setSectionScores({ ...sectionScores, numScore: parseFloat(e.target.value) || 0 })}
-                  className="w-full p-2 border rounded-lg text-sm font-bold text-amber-700 bg-gray-50 outline-none focus:bg-white focus:ring-1 focus:ring-amber-500"
+                  className="w-full p-2 border rounded-lg text-sm font-bold text-amber-700 bg-gray-50 outline-none"
                 />
                 <span className="text-xs font-bold text-gray-500">điểm</span>
               </div>
@@ -1425,31 +1177,20 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
           </div>
         </div>
 
-        {/* Danh sách câu hỏi */}
         {questions.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-300 p-8 space-y-3">
-            <FileQuestion size={48} className="mx-auto text-gray-300"/>
-            <div>
-              <p className="text-gray-700 font-bold">Chưa có câu hỏi nào trong đề thi.</p>
-              <p className="text-xs text-gray-400">Thầy/Cô có thể tải file mẫu để nạp hàng loạt từ file Word hoặc tạo thủ công từng câu.</p>
-            </div>
-            <div className="pt-2 flex justify-center gap-3">
-              <button onClick={downloadSampleWord} className="px-4 py-2 border rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-1.5">
-                <Download size={14}/> Tải file mẫu
-              </button>
-              <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 flex items-center gap-1.5 shadow-sm">
-                <Upload size={14}/> Chọn file Word nạp đề
-              </button>
-            </div>
+          <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-300 p-8">
+            <FileQuestion size={48} className="mx-auto text-gray-300 mb-3"/>
+            <p className="text-gray-600 font-bold mb-1">Chưa có câu hỏi nào trong đề này.</p>
+            <p className="text-xs text-gray-400">Thầy hãy bấm vào các nút thêm câu hỏi ở phía dưới để bắt đầu soạn đề nhé.</p>
           </div>
         ) : (
           questions.map((q, qIndex) => (
-            <div key={q.id || qIndex} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 relative space-y-4">
+            <div key={q.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 relative space-y-4">
               <div className="flex justify-between items-center border-b pb-3">
                 <span className="font-black text-blue-900 text-base">Câu {qIndex + 1}</span>
                 <div className="flex items-center gap-3">
                   <select 
-                    value={q.type || 'multi'} 
+                    value={q.type} 
                     onChange={(e) => updateQuestionField(qIndex, 'type', e.target.value)}
                     className="text-xs font-bold bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
                   >
@@ -1467,16 +1208,16 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Nội dung đề bài</label>
                 <textarea 
                   rows={3}
-                  value={q.content || ''}
+                  value={q.content}
                   onChange={(e) => updateQuestionField(qIndex, 'content', e.target.value)}
-                  placeholder="Nhập nội dung câu hỏi..."
+                  placeholder="Nhập nội dung câu hỏi vật lý..."
                   className="w-full p-3.5 rounded-xl bg-gray-50 text-gray-900 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm leading-relaxed font-medium"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5 flex items-center gap-1.5">
-                  <ImageIcon size={14} className="text-blue-500"/> Link hình ảnh minh họa (Online / Drive)
+                  <ImageIcon size={14} className="text-blue-500"/> Link hình ảnh minh họa (Google Drive / Ảnh online)
                 </label>
                 <input 
                   type="url"
@@ -1488,7 +1229,7 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
               </div>
 
               <div className="pt-3 border-t border-dashed border-gray-200">
-                {(q.type === 'multi' || !q.type) && (
+                {q.type === 'multi' && (
                   <div className="space-y-3">
                     <span className="block text-xs font-bold text-blue-900 uppercase tracking-wider">Các phương án trả lời (Chọn 1 đáp án đúng)</span>
                     {['A', 'B', 'C', 'D'].map((opt, optIdx) => (
@@ -1502,7 +1243,7 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
                           className="flex-1 w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm font-medium"
                         />
                         <label className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border text-xs font-bold cursor-pointer shrink-0 transition-colors ${q.answerMCQ === opt ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}>
-                          <input type="radio" name={`mcq-${q.id || qIndex}`} checked={q.answerMCQ === opt} onChange={() => updateQuestionField(qIndex, 'answerMCQ', opt)} className="hidden" />
+                          <input type="radio" name={`mcq-${q.id}`} checked={q.answerMCQ === opt} onChange={() => updateQuestionField(qIndex, 'answerMCQ', opt)} className="hidden" />
                           {q.answerMCQ === opt ? '✓ Đáp án đúng' : 'Chọn là đúng'}
                         </label>
                       </div>
@@ -1518,18 +1259,18 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
                         <span className="font-black text-indigo-700 w-6 text-sm">{['a', 'b', 'c', 'd'][sIdx]}.</span>
                         <textarea 
                           rows={2}
-                          value={stmt.text || ''}
+                          value={stmt.text}
                           onChange={(e) => updateTfStatement(qIndex, sIdx, 'text', e.target.value)}
                           placeholder={`Nhập nội dung ý ${['a', 'b', 'c', 'd'][sIdx]}...`}
-                          className="flex-1 w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-200 focus:outline-none focus:ring-1 focus:indigo-500 text-sm font-medium"
+                          className="flex-1 w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm font-medium"
                         />
                         <div className="flex items-center gap-2 shrink-0">
-                          <label className={`px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-colors ${stmt.isTrue ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300'}`}>
-                            <input type="radio" name={`tf-${q.id || qIndex}-${sIdx}`} checked={stmt.isTrue} onChange={() => updateTfStatement(qIndex, sIdx, 'isTrue', true)} className="hidden" />
+                          <label className={`px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-colors ${stmt.isTrue ? 'bg-green-600 text-white border-green-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300'}`}>
+                            <input type="radio" name={`tf-${q.id}-${sIdx}`} checked={stmt.isTrue} onChange={() => updateTfStatement(qIndex, sIdx, 'isTrue', true)} className="hidden" />
                             Đúng
                           </label>
-                          <label className={`px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-colors ${!stmt.isTrue ? 'bg-rose-600 text-white border-rose-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300'}`}>
-                            <input type="radio" name={`tf-${q.id || qIndex}-${sIdx}`} checked={!stmt.isTrue} onChange={() => updateTfStatement(qIndex, sIdx, 'isTrue', false)} className="hidden" />
+                          <label className={`px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-colors {!stmt.isTrue ? 'bg-red-600 text-white border-red-600 shadow-sm' : 'bg-white text-gray-700 border-gray-300'}`}>
+                            <input type="radio" name={`tf-${q.id}-${sIdx}`} checked={!stmt.isTrue} onChange={() => updateTfStatement(qIndex, sIdx, 'isTrue', false)} className="hidden" />
                             Sai
                           </label>
                         </div>
@@ -1540,30 +1281,15 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
 
                 {q.type === 'number' && (
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="block text-xs font-bold text-amber-900 uppercase tracking-wider">Đáp án điền số</span>
-                      <span className="text-[11px] text-gray-500 italic">Tự động đồng bộ dấu chấm (.) và dấu phẩy (,)</span>
-                    </div>
+                    <span className="block text-xs font-bold text-amber-900 uppercase tracking-wider">Đáp án điền số (Hỗ trợ cả 2 dạng dấu thập phân)</span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs text-gray-500 mb-1 font-medium">Dạng dấu chấm (.)</label>
-                        <input 
-                          type="text" 
-                          value={q.answerNumDot || ''} 
-                          onChange={(e) => handleNumericAnswerChange(qIndex, e.target.value)} 
-                          placeholder="VD: 15.5" 
-                          className="w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-300 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-500" 
-                        />
+                        <label className="block text-xs text-gray-500 mb-1 font-medium">Dạng dùng dấu chấm (.)</label>
+                        <input type="text" value={q.answerNumDot || ''} onChange={(e) => updateQuestionField(qIndex, 'answerNumDot', e.target.value)} placeholder="VD: 15.5" className="w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-300 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-500" />
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-500 mb-1 font-medium">Dạng dấu phẩy (,)</label>
-                        <input 
-                          type="text" 
-                          value={q.answerNumComma || ''} 
-                          onChange={(e) => handleNumericAnswerChange(qIndex, e.target.value)} 
-                          placeholder="VD: 15,5" 
-                          className="w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-300 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-500" 
-                        />
+                        <label className="block text-xs text-gray-500 mb-1 font-medium">Dạng dùng dấu phẩy (,)</label>
+                        <input type="text" value={q.answerNumComma || ''} onChange={(e) => updateQuestionField(qIndex, 'answerNumComma', e.target.value)} placeholder="VD: 15,5" className="w-full p-2.5 rounded-lg bg-white text-gray-900 border border-gray-300 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-500" />
                       </div>
                     </div>
                   </div>
@@ -1573,9 +1299,8 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
           ))
         )}
 
-        {/* Nút thêm câu hỏi */}
         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm text-center space-y-3">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Thêm câu hỏi mới thủ công</p>
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Thêm câu hỏi mới vào đề thi</p>
           <div className="flex flex-wrap justify-center gap-2">
             <button onClick={() => addQuestion('multi')} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-transform active:scale-95">+ Trắc nghiệm nhiều lựa chọn</button>
             <button onClick={() => addQuestion('truefalse')} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-transform active:scale-95">+ Trắc nghiệm Đúng / Sai</button>
@@ -1583,23 +1308,23 @@ Câu 3: Thả một hòn đá rơi tự do từ độ cao 20 m xuống đất. L
           </div>
         </div>
 
-        {/* Link đáp án */}
         <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-2 bg-blue-50/40">
           <label className="block text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
-            <LinkIcon size={14} className="text-blue-600"/> Đường dẫn xem bài giải chi tiết / Video chữa
+            <LinkIcon size={14} className="text-blue-600"/> Đường dẫn xem bài giải chi tiết / Video chữa (Dành cho học sinh sau khi nộp bài)
           </label>
           <input 
             type="url" 
             value={answerLink} 
             onChange={(e) => setAnswerLink(e.target.value)} 
             placeholder="Dán link Google Drive hoặc YouTube vào đây..." 
-            className="w-full p-3 rounded-xl bg-white text-gray-900 border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium shadow-sm"
+            className="w-full p-3 rounded-xl bg-white text-gray-900 border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium shadow-2xs"
           />
         </div>
       </div>
     </div>
   );
 }
+
 /**
  * ==========================================
  * MODULE: QUẢN LÝ LỚP & HỌC SINH (ClassManagement.jsx)
