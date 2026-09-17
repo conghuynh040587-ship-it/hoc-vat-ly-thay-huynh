@@ -7,10 +7,11 @@
  * ==========================================
  */
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Phone, Mail, GraduationCap, ShieldCheck, LogOut, BookOpen, ChevronRight, ChevronDown, FileText, Video, FileQuestion, Clock, School, Users, UserCheck, AlertCircle, CheckCircle, Database, Plus, Trash2, Edit, FileSpreadsheet, ArrowLeft, Save, Image as ImageIcon, Link as LinkIcon, Sliders, Eye, BarChart2, Filter, Calendar, Award, Share2 } from 'lucide-react';
+import { User, Lock, Phone, Mail, GraduationCap, ShieldCheck, LogOut, BookOpen, ChevronRight, ChevronDown, FileText, Video, FileQuestion, Clock, School, Users, UserCheck, AlertCircle, CheckCircle, Database, Plus, Trash2, Edit, FileSpreadsheet, ArrowLeft, Save, Image as ImageIcon, Link as LinkIcon, Sliders, Eye, BarChart2, Filter, Calendar, Award, Share2, Code2, Sparkles, Check } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { firestoreDb } from './firebase';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+
 // ==========================================
 // HÀM HỖ TRỢ: XỬ LÝ CÔNG THỨC MATHTYPE / LATEX (Dùng CDN KaTeX toàn cục)
 // ==========================================
@@ -42,25 +43,16 @@ const renderMathContent = (text) => {
 /**
  * ==========================================
  * MODULE: XÁC THỰC NGƯỜI DÙNG (Auth.jsx)
- * Chức năng: Đăng nhập/Đăng ký dành cho Học sinh và Quản trị viên.
- * ==========================================
- */
-/**
- * ==========================================
- * MODULE: XÁC THỰC NGƯỜI DÙNG (Auth.jsx)
  * Chức năng: Đăng ký & Đăng nhập với mật khẩu được mã hóa riêng biệt.
  * ==========================================
  */
-
-// Hàm hỗ trợ mã hóa chuỗi (băm mật khẩu một chiều bằng cơ chế đơn giản an toàn trên web)
 const hashPassword = (str) => {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = (hash << 5) - hash + char;
-    hash |= 0; // Chuyển đổi thành số nguyên 32bit
+    hash |= 0;
   }
-  // Tạo chuỗi mã hóa riêng biệt kết hợp độ dài và định dạng Hex ngầm định
   return "hash_" + Math.abs(hash).toString(16) + "_" + btoa(str).substring(0, 6);
 };
 
@@ -94,7 +86,6 @@ function Auth({ onLoginSuccess }) {
       return;
     }
 
-    // Lấy cơ sở dữ liệu tài khoản học sinh đã lưu
     const savedAccounts = JSON.parse(localStorage.getItem('student_secure_accounts') || '{}');
 
     if (mode === 'register') {
@@ -103,19 +94,17 @@ function Auth({ onLoginSuccess }) {
         return;
       }
       
-      // Kiểm tra số điện thoại (đã được định danh riêng)
       if (savedAccounts[formData.phone]) {
         setErrorMsg('Số điện thoại này đã được đăng ký. Vui lòng chuyển sang Đăng Nhập!');
         return;
       }
 
-      // Mã hóa mật khẩu riêng biệt cho học sinh này
       const securePasswordHash = hashPassword(formData.password);
 
       savedAccounts[formData.phone] = {
         name: formData.name,
         phone: formData.phone,
-        passwordHash: securePasswordHash, // Lưu chuỗi đã mã hóa riêng biệt
+        passwordHash: securePasswordHash,
         email: formData.email
       };
       
@@ -135,14 +124,12 @@ function Auth({ onLoginSuccess }) {
         return;
       }
 
-      // Kiểm tra mã hóa mật khẩu nhập vào có khớp với mã hóa đã lưu hay không
       const inputPasswordHash = hashPassword(formData.password);
       if (account.passwordHash !== inputPasswordHash) {
         setErrorMsg('Mật khẩu không chính xác. Vui lòng kiểm tra lại!');
         return;
       }
 
-      // Đăng nhập thành công
       onLoginSuccess({
         role: 'student',
         name: account.name,
@@ -290,10 +277,10 @@ function Auth({ onLoginSuccess }) {
     </div>
   );
 }
+
 /**
  * ==========================================
  * MODULE: XÁC THỰC HỒ SƠ HỌC SINH (StudentLinkProfile.jsx)
- * Chức năng: Ép buộc học sinh chọn Khối -> Lớp -> Tên đúng với danh sách gốc.
  * ==========================================
  */
 function StudentLinkProfile({ currentUser, db, onConfirmLink, onLogout }) {
@@ -431,10 +418,8 @@ function StudentLinkProfile({ currentUser, db, onConfirmLink, onLogout }) {
 }
 
 /**
-/**
  * ==========================================
  * MODULE: DASHBOARD HỌC SINH (StudentDashboard.jsx)
- * Chức năng: Hiển thị giao diện học tập chính, mục lục bài học và lọc học liệu theo lớp được phân công.
  * ==========================================
  */
 function StudentDashboard({ currentUser, db, onLogout, onStartQuiz }) {
@@ -449,18 +434,14 @@ function StudentDashboard({ currentUser, db, onLogout, onStartQuiz }) {
 
   const currentStudent = db.studentsList?.find(s => s.id === currentUser?.linkedStudentId);
   const studentClassId = currentUser?.classId || currentStudent?.classId;
-  
-  // === (1) TỰ ĐỘNG XÁC ĐỊNH KHỐI CỦA HỌC SINH ĐANG ĐĂNG NHẬP ===
   const studentClass = db.classes?.find(c => c.id === studentClassId);
-  const studentGradeId = studentClass?.gradeId; // Lấy ra id khối (VD: 'g10', 'g11', 'g12')
+  const studentGradeId = studentClass?.gradeId;
 
-  // === (2) LỌC CHỈ LẤY CÁC CHƯƠNG THUỘC ĐÚNG KHỐI ĐÓ ===
   const filteredChapters = (db.chapters || []).filter(chap => {
-    if (!studentGradeId) return true; // Phòng hờ nếu chưa rõ lớp thì hiện tất cả
+    if (!studentGradeId) return true;
     return chap.gradeId === studentGradeId;
   });
 
-  // Lọc học liệu: Đề kiểm tra (quiz) phải thuộc diện được giao chung HOẶC giao riêng cho lớp của học sinh
   const availableMaterials = (db.materials || []).filter(mat => {
     if (mat.lessonId !== selectedLesson) return false;
     if (mat.type === 'theory' || mat.type === 'video') return true;
@@ -680,10 +661,10 @@ function StudentDashboard({ currentUser, db, onLogout, onStartQuiz }) {
     </div>
   );
 }
+
 /**
  * ==========================================
  * MODULE: GIAO DIỆN LÀM BÀI VÀ XEM LẠI (QuizPlayer.jsx)
- * Chức năng: Phòng làm bài trắc nghiệm, đếm ngược, render KaTeX và thuật toán chấm điểm chuẩn Đại học.
  * ==========================================
  */
 function QuizPlayer({ quiz, currentUser, onFinish, onSaveResult }) {
@@ -720,296 +701,170 @@ function QuizPlayer({ quiz, currentUser, onFinish, onSaveResult }) {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
 
-  const handleTFChange = (questionId, statementIndex, value) => {
-    if (isReviewing) return;
-    setAnswers(prev => {
-      const currentQ = prev[questionId] || {};
-      return { ...prev, [questionId]: { ...currentQ, [statementIndex]: value } };
-    });
-  };
-
-  const submitQuiz = (isAuto = false) => {
+  const submitQuiz = (auto = false) => {
     const questions = quiz.questions || [];
-    if (questions.length === 0) {
-      setFinalScore(0);
-      setIsFinished(true);
-      return;
-    }
+    let calculatedScore = 0;
 
-    const scoresConfig = quiz.quizConfig?.sectionScores || { multiScore: 4.0, tfScore: 3.0, numScore: 3.0 };
-    
-    const multiQuestions = questions.filter(q => q.type === 'multi' || !q.type);
-    const tfQuestions = questions.filter(q => q.type === 'truefalse');
-    const numQuestions = questions.filter(q => q.type === 'number');
+    const multiQs = questions.filter(q => q.type === 'multi' || !q.type);
+    const tfQs = questions.filter(q => q.type === 'truefalse');
+    const numQs = questions.filter(q => q.type === 'number');
 
-    const pointPerMulti = multiQuestions.length > 0 ? scoresConfig.multiScore / multiQuestions.length : 0;
-    const pointPerNum = numQuestions.length > 0 ? scoresConfig.numScore / numQuestions.length : 0;
-    const pointPerTfQuestion = tfQuestions.length > 0 ? scoresConfig.tfScore / tfQuestions.length : 0;
+    const multiScore = quiz.quizConfig?.sectionScores?.multiScore || 4.0;
+    const tfScore = quiz.quizConfig?.sectionScores?.tfScore || 3.0;
+    const numScore = quiz.quizConfig?.sectionScores?.numScore || 3.0;
 
-    let totalEarnedScore = 0;
-
-    questions.forEach(q => {
-      const qType = q.type || 'multi';
-
-      if (qType === 'multi') {
-        if (answers[q.id] === q.answerMCQ) {
-          totalEarnedScore += pointPerMulti;
-        }
-      } 
-      else if (qType === 'truefalse') {
-        const studentAns = answers[q.id] || {};
-        let correctCount = 0;
-        (q.tfStatements || []).forEach((stmt, idx) => {
-          if (studentAns[idx] === stmt.isTrue) {
-            correctCount++;
-          }
-        });
-
-        let ratio = 0;
-        if (correctCount === 1) ratio = 0.10;
-        else if (correctCount === 2) ratio = 0.25;
-        else if (correctCount === 3) ratio = 0.50;
-        else if (correctCount === 4) ratio = 1.00;
-
-        totalEarnedScore += (pointPerTfQuestion * ratio);
-      } 
-      else if (qType === 'number') {
-        const rawAns = String(answers[q.id] || '').trim().toLowerCase();
-        const dotAns = String(q.answerNumDot || '').trim().toLowerCase();
-        const commaAns = String(q.answerNumComma || '').trim().toLowerCase();
-
-        if (rawAns && (rawAns === dotAns || rawAns === commaAns)) {
-          totalEarnedScore += pointPerNum;
-        }
-      }
-    });
-
-    const calculatedScore = Math.min(10, Math.max(0, totalEarnedScore)).toFixed(2);
-    setFinalScore(calculatedScore);
-
-    const totalTimeAllowed = (quiz.quizConfig?.time || 45) * 60;
-    const secondsSpent = totalTimeAllowed - timeLeft;
-    const minutesDone = Math.floor(secondsSpent / 60);
-    const secondsDone = secondsSpent % 60;
-    const durationText = minutesDone > 0 ? `${minutesDone} phút ${secondsDone} giây` : `${secondsDone} giây`;
-
-    if (onSaveResult) {
-      onSaveResult({
-        quizId: quiz.id,
-        score: calculatedScore,
-        duration: durationText
+    if (multiQs.length > 0) {
+      const perMulti = multiScore / multiQs.length;
+      multiQs.forEach(q => {
+        if (answers[q.id] === q.answerMCQ) calculatedScore += perMulti;
       });
     }
 
+    if (tfQs.length > 0) {
+      const perTf = tfScore / tfQs.length;
+      tfQs.forEach(q => {
+        const userAns = answers[q.id] || {};
+        let correctCount = 0;
+        q.tfStatements?.forEach((stmt, idx) => {
+          if (userAns[idx] === stmt.isTrue) correctCount++;
+        });
+        if (correctCount === 1) calculatedScore += perTf * 0.1;
+        else if (correctCount === 2) calculatedScore += perTf * 0.25;
+        else if (correctCount === 3) calculatedScore += perTf * 0.5;
+        else if (correctCount === 4) calculatedScore += perTf * 1.0;
+      });
+    }
+
+    if (numQs.length > 0) {
+      const perNum = numScore / numQs.length;
+      numQs.forEach(q => {
+        const userVal = String(answers[q.id] || '').trim();
+        if (userVal && (userVal === q.answerNumDot || userVal === q.answerNumComma)) {
+          calculatedScore += perNum;
+        }
+      });
+    }
+
+    const finalResultScore = parseFloat(calculatedScore.toFixed(2));
+    setFinalScore(finalResultScore);
+    setIsFinished(true);
     setShowConfirmModal(false);
-    setIsFinished(true); 
+
+    onSaveResult({
+      quizId: quiz.id,
+      quizName: quiz.name,
+      studentId: currentUser.linkedStudentId,
+      studentName: currentUser.name,
+      score: finalResultScore,
+      answers,
+      submittedAt: new Date().toISOString()
+    });
   };
-
-  if (isFinished && !isReviewing) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans">
-        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-gray-100 space-y-6">
-          <CheckCircle size={64} className="mx-auto text-green-500" />
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-1">Đã nộp bài thành công!</h2>
-            <p className="text-gray-600 text-sm">Kết quả của em đã được ghi nhận vào hệ thống lớp học.</p>
-          </div>
-          
-          <div className="bg-green-50 p-6 rounded-xl border border-green-200">
-             <p className="text-5xl font-black text-green-700 mb-1">{finalScore}</p>
-             <p className="text-sm font-bold text-green-600 uppercase tracking-widest">Điểm số tổng kết</p>
-          </div>
-
-          <div className="space-y-3">
-            <button 
-              onClick={() => setIsReviewing(true)} 
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors shadow flex items-center justify-center gap-2 text-sm"
-            >
-              <Eye size={18}/> Xem lại chi tiết bài làm
-            </button>
-
-            {quiz.quizConfig?.answerLink && (
-              <a 
-                href={quiz.quizConfig.answerLink} 
-                target="_blank" 
-                rel="noreferrer" 
-                className="block text-center bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-3 rounded-lg font-bold transition-colors text-sm border border-gray-200"
-              >
-                Mở tài liệu / Video giải chi tiết
-              </a>
-            )}
-            
-            <button 
-              onClick={onFinish} 
-              className="w-full py-2.5 text-gray-500 hover:text-gray-800 font-semibold text-sm"
-            >
-              Quay lại danh sách bài học
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col font-sans">
-      <div className="bg-white border-b px-4 sm:px-6 py-3 sticky top-0 z-20 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          {isReviewing && (
-            <button onClick={() => setIsReviewing(false)} className="text-gray-600 hover:text-gray-900 p-1.5 rounded-lg hover:bg-gray-100">
-              <ArrowLeft size={20}/>
-            </button>
-          )}
-          <div>
-            <h1 className="text-sm font-bold text-gray-800 line-clamp-1">{quiz.name} {isReviewing && <span className="text-blue-600 font-black">(CHẾ ĐỘ XEM LẠI)</span>}</h1>
-            <span className="text-xs text-gray-500 font-medium">Học sinh: {currentUser?.name}</span>
-          </div>
+      <header className="bg-white border-b px-6 py-4 flex justify-between items-center shadow-xs sticky top-0 z-20">
+        <div>
+          <h1 className="text-base font-bold text-gray-900">{quiz.name}</h1>
+          <p className="text-xs text-gray-500">Học sinh: <strong>{currentUser.name}</strong></p>
         </div>
-
-        {!isReviewing ? (
-          <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-0 pt-2 sm:pt-0">
-            <div className={`flex items-center gap-1.5 font-bold text-sm px-3 py-1.5 rounded-md border shadow-2xs ${timeLeft <= 300 ? 'bg-red-50 border-red-200 text-red-600 animate-pulse' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
-              <Clock size={16}/>
-              <span>{formatTime(timeLeft)}</span>
+        <div className="flex items-center gap-4">
+          {!isFinished ? (
+            <div className="bg-red-50 text-red-600 px-4 py-2 rounded-xl border border-red-200 font-mono font-bold text-sm flex items-center gap-2">
+              <Clock size={16}/> {formatTime(timeLeft)}
             </div>
-            <button onClick={() => setShowConfirmModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-5 py-1.5 rounded-md font-bold text-sm shadow-sm transition-transform active:scale-95">
+          ) : (
+            <div className="bg-green-50 text-green-700 px-4 py-2 rounded-xl border border-green-200 font-bold text-sm">
+              Điểm: {finalScore} / 10
+            </div>
+          )}
+          {!isFinished ? (
+            <button onClick={() => setShowConfirmModal(true)} className="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold text-sm shadow hover:bg-blue-700">
               Nộp bài
             </button>
-          </div>
-        ) : (
-          <div className="bg-blue-50 px-4 py-1.5 rounded-lg border border-blue-200 text-blue-800 font-bold text-sm">
-            Điểm đạt được: {finalScore} điểm
-          </div>
-        )}
-      </div>
+          ) : (
+            <button onClick={onFinish} className="bg-gray-800 text-white px-5 py-2 rounded-lg font-bold text-sm shadow hover:bg-black">
+              Quay lại
+            </button>
+          )}
+        </div>
+      </header>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-8">
-         <div className="max-w-3xl mx-auto space-y-6">
-            {!quiz.questions || quiz.questions.length === 0 ? (
-               <div className="bg-white p-8 rounded-xl shadow-sm text-center border border-gray-200">
-                  <p className="text-gray-500 font-medium">Đề thi chưa có câu hỏi nào.</p>
-               </div>
-            ) : (
-               quiz.questions.map((q, index) => {
-                  const qType = q.type || 'multi';
+      <div className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-6 overflow-y-auto">
+        {quiz.questions?.map((q, idx) => (
+          <div key={q.id} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <div className="font-bold text-gray-900 flex items-start gap-2">
+              <span className="text-blue-600">Câu {idx + 1}:</span>
+              <div className="flex-1">{renderMathContent(q.content)}</div>
+            </div>
 
-                  return (
-                     <div key={q.id} className="p-6 bg-white rounded-2xl shadow-sm border border-gray-200 space-y-4">
-                        <h4 className="font-black text-lg text-blue-900 flex gap-2 border-b border-gray-100 pb-3">
-                           <span className="shrink-0">Câu {index + 1}:</span>
-                           <div className="font-medium text-gray-800">{renderMathContent(q.content)}</div>
-                        </h4>
-                        
-                        {q.imageLink && (
-                           <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 p-2">
-                               <img src={q.imageLink} alt={`Minh họa câu ${index+1}`} className="w-full object-contain max-h-96 rounded-lg" />
-                           </div>
-                        )}
-
-                        {qType === 'multi' && (
-                           <div className="space-y-3">
-                              {['A', 'B', 'C', 'D'].map((opt, optIdx) => {
-                                 const optionText = q.options && q.options[optIdx] ? q.options[optIdx] : `Đáp án ${opt}`;
-                                 const isSelected = answers[q.id] === opt;
-                                 const isCorrect = isReviewing && q.answerMCQ === opt;
-                                 const isWrongSelected = isReviewing && isSelected && !isCorrect;
-
-                                 let badgeStyle = "bg-white border-gray-200 hover:bg-gray-50";
-                                 if (isReviewing) {
-                                   if (isCorrect) badgeStyle = "bg-green-50 border-green-500 ring-1 ring-green-500";
-                                   else if (isWrongSelected) badgeStyle = "bg-red-50 border-red-500 ring-1 ring-red-500";
-                                 } else if (isSelected) {
-                                   badgeStyle = "bg-blue-50 border-blue-500 ring-1 ring-blue-500";
-                                 }
-
-                                 return (
-                                    <label key={opt} className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${badgeStyle}`}>
-                                       <input 
-                                          type="radio" 
-                                          name={`ans_${q.id}`} 
-                                          checked={isSelected} 
-                                          disabled={isReviewing}
-                                          onChange={() => handleAnswerChange(q.id, opt)}
-                                          className="mt-1 w-4 h-4 text-blue-600 shrink-0"
-                                       />
-                                       <div className="flex-1 flex gap-2 leading-relaxed">
-                                          <span className="font-black text-gray-700">{opt}.</span>
-                                          <span className="text-gray-800 font-medium">{renderMathContent(optionText)}</span>
-                                       </div>
-                                       {isReviewing && isCorrect && <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded">Đáp án đúng</span>}
-                                       {isReviewing && isWrongSelected && <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded">Em chọn sai</span>}
-                                    </label>
-                                 );
-                              })}
-                           </div>
-                        )}
-
-                        {qType === 'truefalse' && (
-                           <div className="space-y-3">
-                              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">Các phát biểu Đúng / Sai:</p>
-                              {(q.tfStatements || []).map((stmt, sIdx) => {
-                                 const studentVal = answers[q.id]?.[sIdx];
-                                 const correctVal = stmt.isTrue;
-
-                                 return (
-                                    <div key={sIdx} className="p-4 border rounded-xl bg-gray-50 flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
-                                       <div className="font-medium text-gray-800 flex-1 flex gap-2">
-                                          <span className="font-bold text-gray-900 shrink-0">{['a', 'b', 'c', 'd'][sIdx]}.</span> 
-                                          {renderMathContent(stmt.text)}
-                                       </div>
-                                       <div className="flex gap-3 shrink-0 items-center">
-                                          <label className={`flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border font-bold text-sm transition-colors ${studentVal === true ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600'}`}>
-                                             <input type="radio" disabled={isReviewing} className="hidden" checked={studentVal === true} onChange={() => handleTFChange(q.id, sIdx, true)} />
-                                             Đúng
-                                          </label>
-                                          <label className={`flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border font-bold text-sm transition-colors ${studentVal === false ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600'}`}>
-                                             <input type="radio" disabled={isReviewing} className="hidden" checked={studentVal === false} onChange={() => handleTFChange(q.id, sIdx, false)} />
-                                             Sai
-                                          </label>
-                                          {isReviewing && (
-                                             <span className={`text-xs font-bold px-2 py-1 rounded ${studentVal === correctVal ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                Thực tế: {correctVal ? 'Đúng' : 'Sai'}
-                                             </span>
-                                          )}
-                                       </div>
-                                    </div>
-                                 );
-                              })}
-                           </div>
-                        )}
-
-                        {qType === 'number' && (
-                           <div className="space-y-2">
-                              <input 
-                                 type="text" 
-                                 disabled={isReviewing}
-                                 placeholder="Nhập câu trả lời của em..." 
-                                 className="w-full p-4 border border-gray-300 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 text-gray-900" 
-                                 value={answers[q.id] || ''} 
-                                 onChange={(e) => handleAnswerChange(q.id, e.target.value)} 
-                              />
-                              {isReviewing && (
-                                 <p className="text-xs font-bold text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                    Đáp án chuẩn của giáo viên: <span className="text-blue-700 font-black">{q.answerNumDot || q.answerNumComma || '-'}</span>
-                                 </p>
-                              )}
-                           </div>
-                        )}
-                     </div>
-                  );
-               })
+            {q.imageLink && (
+              <div className="text-center">
+                <img src={q.imageLink} alt={`Hình minh họa câu ${idx + 1}`} className="max-h-60 mx-auto rounded-xl border shadow-xs" />
+              </div>
             )}
-         </div>
+
+            {/* Dạng 1: Nhiều lựa chọn */}
+            {(q.type === 'multi' || !q.type) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                {['A', 'B', 'C', 'D'].map((opt, optIdx) => {
+                  const isChecked = answers[q.id] === opt;
+                  return (
+                    <label key={opt} className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-colors ${isChecked ? 'bg-blue-50 border-blue-500 text-blue-900' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}>
+                      <input type="radio" name={`q_${q.id}`} checked={isChecked} onChange={() => handleAnswerChange(q.id, opt)} disabled={isFinished} className="text-blue-600" />
+                      <span className="font-bold">{opt}.</span>
+                      <span className="text-sm">{renderMathContent(q.options?.[optIdx])}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Dạng 2: Đúng / Sai */}
+            {q.type === 'truefalse' && (
+              <div className="space-y-2 pt-2">
+                {q.tfStatements?.map((stmt, sIdx) => {
+                  const userAns = answers[q.id]?.[sIdx];
+                  return (
+                    <div key={sIdx} className="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between gap-4">
+                      <span className="text-sm font-medium flex-1">
+                        <strong className="text-indigo-600">{['a', 'b', 'c', 'd'][sIdx]}.</strong> {renderMathContent(stmt.text)}
+                      </span>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleAnswerChange(q.id, { ...(answers[q.id] || {}), [sIdx]: true })} disabled={isFinished} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${userAns === true ? 'bg-green-600 text-white' : 'bg-white border'}`}>Đúng</button>
+                        <button onClick={() => handleAnswerChange(q.id, { ...(answers[q.id] || {}), [sIdx]: false })} disabled={isFinished} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${userAns === false ? 'bg-red-600 text-white' : 'bg-white border'}`}>Sai</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Dạng 3: Điền số */}
+            {q.type === 'number' && (
+              <div className="pt-2">
+                <input
+                  type="text"
+                  placeholder="Nhập câu trả lời bằng số..."
+                  value={answers[q.id] || ''}
+                  onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                  disabled={isFinished}
+                  className="w-full sm:w-1/2 p-3 rounded-xl border border-gray-200 bg-gray-50 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl space-y-4">
-            <h3 className="font-bold text-xl text-gray-800">Xác nhận nộp bài</h3>
-            <p className="text-gray-600 text-sm">Hệ thống sẽ tiến hành chấm điểm tự động. Em có chắc chắn muốn nộp không?</p>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4 text-center">
+            <h3 className="font-bold text-gray-900 text-lg">Xác nhận nộp bài</h3>
+            <p className="text-sm text-gray-500">Em có chắc chắn muốn kết thúc bài làm và nộp ngay không?</p>
             <div className="flex justify-center gap-3 pt-2">
-              <button onClick={() => setShowConfirmModal(false)} className="px-4 py-2.5 bg-gray-100 text-gray-800 font-bold rounded-lg hover:bg-gray-200 w-full text-sm">Tiếp tục làm</button>
-              <button onClick={() => submitQuiz(false)} className="px-4 py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 w-full text-sm shadow">Nộp bài ngay</button>
+              <button onClick={() => setShowConfirmModal(false)} className="px-4 py-2 border rounded-xl text-xs font-bold">Làm tiếp</button>
+              <button onClick={() => submitQuiz(false)} className="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow">Nộp bài ngay</button>
             </div>
           </div>
         </div>
@@ -1020,13 +875,11 @@ function QuizPlayer({ quiz, currentUser, onFinish, onSaveResult }) {
 
 /**
  * ==========================================
- * MODULE: SOẠN CÂU HỎI & CẤU HÌNH ĐIỂM (QuizEditor.jsx)
- * Chức năng: Giáo viên biên tập câu hỏi trắc nghiệm và cấu hình phân bổ điểm.
+ * MODULE: BIÊN TẬP CÂU HỎI & CẤU HÌNH ĐỀ (QuizEditor.jsx)
+ * Chức năng: Nhập mã LaTeX hàng loạt, tự động phân tách câu hỏi,
+ * chỉnh sửa đề & đáp án riêng, gắn hình ảnh minh họa cho từng bài.
  * ==========================================
-  */
-import React, { useState } from 'react';
-import { ArrowLeft, Save, Sliders, FileQuestion, Trash2, Image as ImageIcon, Link as LinkIcon, Code2, Check, Sparkles } from 'lucide-react';
-
+ */
 function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
   const quiz = db.materials?.find((m) => m.id === quizId) || {
     name: 'Đề kiểm tra',
@@ -1040,13 +893,11 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
     quiz.quizConfig?.sectionScores || { multiScore: 4.0, tfScore: 3.0, numScore: 3.0 }
   );
 
-  // State quản lý Modal nhập LaTeX
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [latexInput, setLatexInput] = useState('');
 
-  // Hàm Parser: Chuyển đổi chuỗi LaTeX thô thành mảng các câu hỏi
+  // Hàm Parser: Tách mã LaTeX thô thành mảng câu hỏi hoàn chỉnh
   const parseLatexToQuestions = (text) => {
-    // Tách các câu hỏi theo từ khóa "Câu" hoặc "Bài"
     const rawBlocks = text.split(/(?=(?:Câu|Bài)\s*\d+[:.])/gi).filter((b) => b.trim().length > 0);
     const parsedQuestions = [];
 
@@ -1064,10 +915,8 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
       let answerNumDot = '';
       let answerNumComma = '';
 
-      // Tách nội dung chính câu hỏi (bỏ bớt chữ "Câu 1:")
       content = content.replace(/^(?:Câu|Bài)\s*\d+[:.]?\s*/i, '').trim();
 
-      // Nhận diện câu Đúng/Sai (Ví dụ chứa các mục a), b), c), d) dạng đúng/sai)
       if (/(?:^|\n)[a-d]\)\s*.*?(?:Đúng|Sai|\(Đ\)|\(S\))/i.test(content) || /Đúng\/Sai/i.test(content)) {
         type = 'truefalse';
         const lines = content.split('\n');
@@ -1093,9 +942,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
           }
         });
         content = mainContentLines.join('\n').trim();
-      }
-      // Nhận diện các lựa chọn A, B, C, D của câu Trắc nghiệm
-      else if (/[A-D]\.\s*/.test(content)) {
+      } else if (/[A-D]\.\s*/.test(content)) {
         type = 'multi';
         const parts = content.split(/(?=[A-D]\.\s*)/);
         content = parts[0].trim();
@@ -1107,7 +954,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
             const optIdx = ['A', 'B', 'C', 'D'].indexOf(optLetter);
             if (optIdx !== -1) {
               let optText = match[2].trim();
-              if (optText.endsWith('*')) { // Dấu * nếu được đánh dấu đáp án đúng trong LaTeX
+              if (optText.endsWith('*')) {
                 optText = optText.slice(0, -1).trim();
                 answerMCQ = optLetter;
               }
@@ -1115,9 +962,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
             }
           }
         });
-      }
-      // Nhận diện câu điền số
-      else if (/Đáp án:|KQ:|Kết quả:/i.test(content)) {
+      } else if (/Đáp án:|KQ:|Kết quả:/i.test(content)) {
         type = 'number';
         const numMatch = content.match(/(?:Đáp án|KQ|Kết quả):\s*([\d\.,]+)/i);
         if (numMatch) {
@@ -1155,7 +1000,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
     setQuestions([...questions, ...newQs]);
     setLatexInput('');
     setIsImportModalOpen(false);
-    showToast(`Đã thêm thành công ${newQs.length} câu hỏi từ mã LaTeX!`);
+    if (showToast) showToast(`Đã thêm thành công ${newQs.length} câu hỏi từ mã LaTeX!`);
   };
 
   const addQuestion = (type) => {
@@ -1220,7 +1065,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
     }) || [];
 
     setDb({ ...db, materials: updatedMaterials });
-    showToast('Đã lưu cấu hình điểm và đề thi thành công!');
+    if (showToast) showToast('Đã lưu cấu hình điểm và đề thi thành công!');
     onClose();
   };
 
@@ -1230,8 +1075,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
 
   return (
     <div className="h-full flex flex-col bg-gray-100 font-sans">
-      {/* Top Header */}
-      <div className="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-20">
+      <div className="bg-white border-b px-6 py-4 flex justify-between items-center shadow-xs sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 p-1.5 rounded-lg hover:bg-gray-100">
             <ArrowLeft size={20} />
@@ -1246,23 +1090,21 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition-transform active:scale-95"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-xs flex items-center gap-2 transition-transform active:scale-95"
           >
             <Code2 size={16} /> Nhập mã LaTeX
           </button>
           <button
             onClick={handleSaveAll}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition-transform active:scale-95"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-bold text-sm shadow-xs flex items-center gap-2 transition-transform active:scale-95"
           >
             <Save size={16} /> Lưu thay đổi
           </button>
         </div>
       </div>
 
-      {/* Main Content Body */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-6">
-        {/* Phân bổ điểm */}
-        <div className="bg-white p-6 rounded-2xl border border-blue-200 shadow-sm space-y-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
+        <div className="bg-white p-6 rounded-2xl border border-blue-200 shadow-xs space-y-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
           <h3 className="font-bold text-sm text-blue-900 flex items-center gap-2 uppercase tracking-wide">
             <Sliders size={18} className="text-blue-600" /> Cấu hình phân bổ điểm số đề thi (Thang 10)
           </h3>
@@ -1303,7 +1145,6 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
           </div>
         </div>
 
-        {/* Danh sách câu hỏi */}
         {questions.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-300 p-8">
             <FileQuestion size={48} className="mx-auto text-gray-300 mb-3" />
@@ -1312,7 +1153,7 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
           </div>
         ) : (
           questions.map((q, qIndex) => (
-            <div key={q.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 relative space-y-4">
+            <div key={q.id} className="bg-white rounded-2xl border border-gray-200 shadow-xs p-6 relative space-y-4">
               <div className="flex justify-between items-center border-b pb-3">
                 <span className="font-black text-blue-900 text-base">Câu {qIndex + 1}</span>
                 <div className="flex items-center gap-3">
@@ -1331,7 +1172,6 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                 </div>
               </div>
 
-              {/* Nội dung câu hỏi LaTeX */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">
                   Nội dung câu hỏi (Nhập text hoặc đoạn mã LaTeX)
@@ -1345,7 +1185,6 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                 />
               </div>
 
-              {/* Link hình ảnh riêng cho từng bài */}
               <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100 space-y-2">
                 <label className="block text-xs font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
                   <ImageIcon size={14} className="text-blue-600" /> Link hình ảnh minh họa bài này
@@ -1364,7 +1203,6 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
                 )}
               </div>
 
-              {/* Tùy chỉnh Chi tiết Đáp án từng dạng */}
               <div className="pt-3 border-t border-dashed border-gray-200">
                 {(q.type === 'multi' || !q.type) && (
                   <div className="space-y-3">
@@ -1445,9 +1283,8 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
           ))
         )}
 
-        {/* Nút Thêm Thủ Công */}
         <div className="bg-white p-5 rounded-2xl border border-gray-200 text-center space-y-3">
-          <p className="text-xs font-bold text-gray-500 uppercase">Thêm câu hỏi mới</p>
+          <p className="text-xs font-bold text-gray-500 uppercase">Thêm câu hỏi mới thủ công</p>
           <div className="flex flex-wrap justify-center gap-2">
             <button onClick={() => addQuestion('multi')} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">+ Trắc nghiệm Lựa chọn</button>
             <button onClick={() => addQuestion('truefalse')} className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold">+ Trắc nghiệm Đúng/Sai</button>
@@ -1455,7 +1292,6 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
           </div>
         </div>
 
-        {/* Link giải chi tiết chung */}
         <div className="bg-white p-5 rounded-2xl border border-blue-200 space-y-2 bg-blue-50/40">
           <label className="block text-xs font-bold text-blue-900 uppercase flex items-center gap-1.5">
             <LinkIcon size={14} className="text-blue-600" /> Đường dẫn xem video chữa / bài giải chi tiết
@@ -1470,7 +1306,6 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
         </div>
       </div>
 
-      {/* Modal Nhập LaTeX hàng loạt */}
       {isImportModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
@@ -1505,1284 +1340,77 @@ function QuizEditor({ db, setDb, quizId, onClose, showToast }) {
   );
 }
 
-export default QuizEditor;
 /**
  * ==========================================
- * MODULE: QUẢN LÝ LỚP & HỌC SINH (ClassManagement.jsx)
- * Chức năng: Thêm/Sửa/Xóa lớp, Thêm học sinh thủ công hoặc Import Excel.
- * ==========================================
- */
-function ClassManagement({ db, setDb, showToast }) {
-  const [selectedClass, setSelectedClass] = useState(null);
-  const [showAddClass, setShowAddClass] = useState(false);
-  const [showAddStudent, setShowAddStudent] = useState(false);
-  const [showManualAddStudent, setShowManualAddStudent] = useState(false);
-  
-  const [newClass, setNewClass] = useState({ gradeId: '', name: '' });
-  const [editingClass, setEditingClass] = useState(null); 
-  const [editingStudent, setEditingStudent] = useState(null); 
-  
-  const [manualStudent, setManualStudent] = useState({
-    name: '',
-    gender: 'Nam',
-    phone: '',
-    email: ''
-  });
-
-  const handleAddClass = (e) => {
-    e.preventDefault();
-    if (!newClass.gradeId || !newClass.name) return;
-    const createdClass = { id: `c${Date.now()}`, gradeId: newClass.gradeId, name: newClass.name.trim() };
-    setDb({ ...db, classes: [...db.classes, createdClass] });
-    setShowAddClass(false);
-    setNewClass({ gradeId: '', name: '' });
-    showToast('Thêm lớp học thành công!');
-  };
-
-  const handleUpdateClass = (e) => {
-    e.preventDefault();
-    if (!editingClass || !editingClass.name.trim()) return;
-    const updatedClasses = db.classes.map(c => c.id === editingClass.id ? { ...c, name: editingClass.name.trim() } : c);
-    setDb({ ...db, classes: updatedClasses });
-    setEditingClass(null);
-    showToast('Cập nhật tên lớp thành công!');
-  };
-
-  const handleUpdateStudent = (e) => {
-    e.preventDefault();
-    if (!editingStudent || !editingStudent.name.trim()) return;
-    const updatedStudents = db.studentsList.map(s => s.id === editingStudent.id ? editingStudent : s);
-    setDb({ ...db, studentsList: updatedStudents });
-    setEditingStudent(null);
-    showToast('Cập nhật thông tin học sinh thành công!');
-  };
-
-  const handleManualAddStudent = (e) => {
-    e.preventDefault();
-    if (!selectedClass || !manualStudent.name.trim()) return;
-    
-    const newStu = {
-      id: `sl_man_${Date.now()}`,
-      classId: selectedClass,
-      name: manualStudent.name.trim(),
-      gender: manualStudent.gender,
-      phone: manualStudent.phone.trim(),
-      email: manualStudent.email.trim(),
-      done: 0,
-      total: 0
-    };
-
-    setDb({
-      ...db,
-      studentsList: [...db.studentsList, newStu]
-    });
-
-    setShowManualAddStudent(false);
-    setManualStudent({ name: '', gender: 'Nam', phone: '', email: '' });
-    showToast('Thêm học sinh thủ công thành công!');
-  };
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (!selectedClass) {
-      showToast('Vui lòng chọn lớp ở cột trái trước khi import!', 'error');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const bstr = evt.target.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws);
-
-        if (data.length === 0) {
-          showToast('File Excel không chứa dữ liệu!', 'error');
-          return;
-        }
-
-        const newStudentsParsed = data.map((row, idx) => ({
-          id: `sl_excel_${Date.now()}_${idx}`,
-          classId: selectedClass,
-          name: row['Họ và tên'] || row['Ho va ten'] || 'Học sinh',
-          gender: row['Giới tính'] || row['Gioi tinh'] || 'Nam',
-          phone: String(row['Số điện thoại'] || row['So dien thoai'] || '').trim(),
-          email: row['Email'] || '',
-          done: 0,
-          total: 0
-        }));
-
-        setDb({
-          ...db, 
-          studentsList: [...db.studentsList, ...newStudentsParsed]
-        });
-        
-        setShowAddStudent(false);
-        showToast(`Đã import thành công ${newStudentsParsed.length} học sinh vào lớp!`);
-      } catch (err) {
-        showToast('Lỗi đọc file Excel. Vui lòng kiểm tra lại cấu trúc cột!', 'error');
-      }
-    };
-    reader.readAsBinaryString(file);
-  };
-
-  const downloadTemplate = () => {
-    const templateData = [
-      { "Họ và tên": "Nguyễn Văn A", "Giới tính": "Nam", "Số điện thoại": "0901234567", "Email": "a@gmail.com" },
-      { "Họ và tên": "Trần Thị B", "Giới tính": "Nữ", "Số điện thoại": "0907654321", "Email": "b@gmail.com" }
-    ];
-    const ws = XLSX.utils.json_to_sheet(templateData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "DanhSachHocSinh");
-    XLSX.writeFile(wb, "Mau_Danh_Sach_Hoc_Sinh.xlsx");
-  };
-
-  return (
-    <div className="h-full flex flex-col md:flex-row">
-      <div className="w-full md:w-1/3 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
-        <div className="p-4 border-b space-y-2 bg-gray-50">
-          <button 
-            onClick={() => setShowAddClass(true)} 
-            className="w-full py-2 bg-white hover:bg-gray-100 rounded-lg flex justify-center items-center gap-2 text-sm font-bold border border-gray-300 shadow-2xs transition-colors"
-          >
-            <Plus size={16}/> Thêm lớp mới
-          </button>
-          <button 
-            onClick={() => {
-              if (!selectedClass) showToast('Vui lòng chọn lớp trước!', 'error');
-              else setShowAddStudent(true);
-            }} 
-            className="w-full py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg flex justify-center items-center gap-2 text-sm font-bold shadow-2xs transition-colors"
-          >
-            <Users size={16}/> Import Danh Sách (Excel/CSV)
-          </button>
-          <button 
-            onClick={() => {
-              if (!selectedClass) showToast('Vui lòng chọn lớp trước!', 'error');
-              else setShowManualAddStudent(true);
-            }} 
-            className="w-full py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg flex justify-center items-center gap-2 text-sm font-bold shadow-2xs transition-colors"
-          >
-            <Plus size={16}/> Thêm học sinh thủ công
-          </button>
-        </div>
-
-        <div className="p-4 space-y-4">
-          {db.grades?.map(grade => (
-            <div key={grade.id}>
-              <h3 className="font-bold text-gray-700 bg-gray-100 px-3 py-1.5 rounded-md text-xs uppercase tracking-wider">{grade.name}</h3>
-              <div className="ml-2 mt-2 space-y-1">
-                {db.classes?.filter(c => c.gradeId === grade.id).map(cls => (
-                  <div 
-                    key={cls.id} 
-                    className={`flex justify-between items-center p-2.5 rounded-lg cursor-pointer transition-colors ${
-                      selectedClass === cls.id ? 'bg-blue-50 text-blue-800 font-bold border border-blue-200' : 'hover:bg-gray-50 text-gray-700'
-                    }`} 
-                    onClick={() => setSelectedClass(cls.id)}
-                  >
-                    <span>{cls.name}</span>
-                    <div className="flex gap-2 items-center text-gray-400">
-                      <Edit 
-                        size={16} 
-                        className="hover:text-blue-600 transition-colors" 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          setEditingClass({ id: cls.id, name: cls.name });
-                        }}
-                        title="Sửa tên lớp"
-                      />
-                      <Trash2 
-                        size={16} 
-                        className="hover:text-red-600 transition-colors" 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          if (window.confirm(`Xóa lớp ${cls.name}?`)) {
-                            setDb({ ...db, classes: db.classes.filter(c => c.id !== cls.id) }); 
-                            showToast('Đã xóa lớp học'); 
-                          }
-                        }}
-                        title="Xóa lớp"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="w-full md:w-2/3 bg-gray-50 p-6 overflow-y-auto">
-        {!selectedClass ? (
-          <div className="h-full flex items-center justify-center text-gray-400 italic">
-            Hãy chọn một lớp học ở cột bên trái để quản lý danh sách học sinh.
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b bg-gray-50 font-bold text-gray-800 flex justify-between items-center">
-              <span>Danh sách lớp: {db.classes?.find(c => c.id === selectedClass)?.name}</span>
-              <span className="text-xs font-bold bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full">
-                Sĩ số: {db.studentsList?.filter(s => s.classId === selectedClass).length} học sinh
-              </span>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-gray-100/70 text-gray-600 uppercase text-xs tracking-wider">
-                  <tr>
-                    <th className="p-3.5 text-center">STT</th>
-                    <th className="p-3.5">Họ và tên</th>
-                    <th className="p-3.5">Giới tính</th>
-                    <th className="p-3.5">Số điện thoại</th>
-                    <th className="p-3.5">Email</th>
-                    <th className="p-3.5 text-center">Tiến độ bài tập</th>
-                    <th className="p-3.5 text-center">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {db.studentsList?.filter(s => s.classId === selectedClass).length === 0 ? (
-                    <tr><td colSpan={7} className="p-6 text-center text-gray-400 italic">Lớp này chưa có học sinh nào. Hãy bấm "Thêm học sinh thủ công" hoặc "Import".</td></tr>
-                  ) : (
-                    db.studentsList?.filter(s => s.classId === selectedClass).map((s, idx) => (
-                      <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="p-3.5 text-center text-gray-500 font-medium">{idx + 1}</td>
-                        <td className="p-3.5 font-bold text-gray-900">{s.name}</td>
-                        <td className="p-3.5 text-gray-600">{s.gender}</td>
-                        <td className="p-3.5 text-gray-600">{s.phone}</td>
-                        <td className="p-3.5 text-gray-600">{s.email || '-'}</td>
-                        <td className="p-3.5 text-center">
-                          <span className="px-2.5 py-1 bg-green-50 text-green-700 rounded-md text-xs font-bold border border-green-100">
-                            {s.done || 0} bài hoàn thành
-                          </span>
-                        </td>
-                        <td className="p-3.5 text-center flex items-center justify-center gap-2">
-                          <button 
-                            onClick={() => setEditingStudent({ ...s })}
-                            className="text-blue-500 hover:text-blue-700 p-1 rounded hover:bg-blue-50 transition-colors"
-                            title="Sửa thông tin học sinh"
-                          >
-                            <Edit size={16}/>
-                          </button>
-                          <button 
-                            onClick={() => {
-                              if (window.confirm(`Xóa học sinh ${s.name}?`)) {
-                                setDb({ ...db, studentsList: db.studentsList.filter(stu => stu.id !== s.id) });
-                                showToast('Đã xóa học sinh khỏi danh sách');
-                              }
-                            }}
-                            className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
-                            title="Xóa học sinh"
-                          >
-                            <Trash2 size={16}/>
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {showAddClass && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="font-bold text-lg mb-4 text-gray-900">Thêm lớp học mới</h3>
-            <form onSubmit={handleAddClass} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Chọn Khối</label>
-                <select 
-                  required 
-                  className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
-                  value={newClass.gradeId} 
-                  onChange={e => setNewClass({ ...newClass, gradeId: e.target.value })}
-                >
-                  <option value="">-- Chọn khối --</option>
-                  {db.grades?.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Tên lớp</label>
-                <input 
-                  required 
-                  type="text" 
-                  placeholder="VD: 12A1" 
-                  className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
-                  value={newClass.name} 
-                  onChange={e => setNewClass({ ...newClass, name: e.target.value })} 
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowAddClass(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-sm">Hủy</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm shadow-sm">Lưu lại</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {editingClass && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="font-bold text-lg mb-4 text-gray-900">Chỉnh sửa tên lớp</h3>
-            <form onSubmit={handleUpdateClass} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Tên lớp mới</label>
-                <input 
-                  required 
-                  type="text" 
-                  className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
-                  value={editingClass.name} 
-                  onChange={e => setEditingClass({ ...editingClass, name: e.target.value })} 
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setEditingClass(null)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-sm">Hủy</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm shadow-sm">Cập nhật</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {editingStudent && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="font-bold text-lg mb-4 text-gray-900">Chỉnh sửa thông tin học sinh</h3>
-            <form onSubmit={handleUpdateStudent} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Họ và tên</label>
-                <input 
-                  required 
-                  type="text" 
-                  className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
-                  value={editingStudent.name} 
-                  onChange={e => setEditingStudent({ ...editingStudent, name: e.target.value })} 
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Giới tính</label>
-                <select 
-                  className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
-                  value={editingStudent.gender} 
-                  onChange={e => setEditingStudent({ ...editingStudent, gender: e.target.value })}
-                >
-                  <option value="Nam">Nam</option>
-                  <option value="Nữ">Nữ</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Số điện thoại</label>
-                <input 
-                  type="text" 
-                  className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
-                  value={editingStudent.phone} 
-                  onChange={e => setEditingStudent({ ...editingStudent, phone: e.target.value })} 
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Email</label>
-                <input 
-                  type="email" 
-                  className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
-                  value={editingStudent.email} 
-                  onChange={e => setEditingStudent({ ...editingStudent, email: e.target.value })} 
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setEditingStudent(null)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-sm">Hủy</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm shadow-sm">Cập nhật</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showManualAddStudent && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="font-bold text-lg mb-4 text-gray-900">Thêm học sinh thủ công</h3>
-            <form onSubmit={handleManualAddStudent} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Họ và tên</label>
-                <input 
-                  required 
-                  type="text" 
-                  placeholder="VD: Nguyễn Văn A" 
-                  className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
-                  value={manualStudent.name} 
-                  onChange={e => setManualStudent({ ...manualStudent, name: e.target.value })} 
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Giới tính</label>
-                <select 
-                  className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
-                  value={manualStudent.gender} 
-                  onChange={e => setManualStudent({ ...manualStudent, gender: e.target.value })}
-                >
-                  <option value="Nam">Nam</option>
-                  <option value="Nữ">Nữ</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Số điện thoại</label>
-                <input 
-                  type="tel" 
-                  placeholder="VD: 0901234567" 
-                  className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
-                  value={manualStudent.phone} 
-                  onChange={e => setManualStudent({ ...manualStudent, phone: e.target.value })} 
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Email</label>
-                <input 
-                  type="email" 
-                  placeholder="VD: email@gmail.com" 
-                  className="w-full p-2.5 border rounded-lg bg-gray-50 text-sm font-medium outline-none" 
-                  value={manualStudent.email} 
-                  onChange={e => setManualStudent({ ...manualStudent, email: e.target.value })} 
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowManualAddStudent(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-sm">Hủy</button>
-                <button type="submit" className="px-4 py-2 bg-green-600 text-white font-bold rounded-lg text-sm shadow-sm">Thêm học sinh</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showAddStudent && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
-            <h3 className="font-bold text-lg mb-2 text-gray-900">Import Danh Sách Học Sinh</h3>
-            <p className="text-xs text-gray-500 mb-4">Thêm học sinh cho lớp đang chọn bằng tệp Excel.</p>
-            
-            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm mb-4 space-y-2">
-              <p className="font-bold text-blue-900 text-xs uppercase tracking-wider">Cấu trúc file Excel yêu cầu:</p>
-              <p className="text-blue-800 text-xs">Các cột trong file cần đặt tên chính xác: <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-bold">Họ và tên</code> | <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-bold">Giới tính</code> | <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-bold">Số điện thoại</code> | <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 font-bold">Email</code></p>
-              <button 
-                type="button" 
-                onClick={downloadTemplate}
-                className="text-blue-600 font-bold underline hover:text-blue-800 text-xs flex items-center gap-1.5 pt-1"
-              >
-                <FileSpreadsheet size={14} /> Tải file Excel mẫu chuẩn tại đây
-              </button>
-            </div>
-
-            <div className="border-2 border-dashed border-gray-300 p-8 rounded-xl text-center hover:bg-gray-50 transition-colors cursor-pointer">
-              <input 
-                type="file" 
-                accept=".xlsx, .xls, .csv" 
-                id="excelInput" 
-                className="hidden" 
-                onChange={handleFileUpload}
-              />
-              <label htmlFor="excelInput" className="cursor-pointer flex flex-col items-center">
-                <Database size={36} className="text-gray-400 mb-2" />
-                <span className="font-bold text-gray-700 text-sm">Click để tải lên file Excel</span>
-                <span className="text-xs text-gray-400 mt-0.5">Hỗ trợ định dạng .xlsx, .xls</span>
-              </label>
-            </div>
-
-            <div className="flex justify-end mt-6">
-              <button onClick={() => setShowAddStudent(false)} className="px-5 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-sm">Đóng</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * ==========================================
- * MODULE: QUẢN LÝ HỌC LIỆU & ĐỀ THI (DataManagement.jsx)
- * Chức năng: Quản lý thư mục Chương/Bài, Gắn học liệu và Phân quyền giao bài cho lớp.
- * ==========================================
- */
-function DataManagement({ db, setDb, showToast }) {
-  const [selectedGrade, setSelectedGrade] = useState(null);
-  const [selectedChapter, setSelectedChapter] = useState(null);
-  const [selectedLesson, setSelectedLesson] = useState(null);
-
-  const [showAddChapter, setShowAddChapter] = useState(false);
-  const [showAddLesson, setShowAddLesson] = useState(false);
-  const [showAddMaterial, setShowAddMaterial] = useState(false);
-  const [assigningQuizId, setAssigningQuizId] = useState(null);
-
-  const [newChapterName, setNewChapterName] = useState('');
-  const [newLessonName, setNewLessonName] = useState('');
-  
-  const [matForm, setMatForm] = useState({ name: '', type: 'theory', link: '' });
-  const [quizConfig, setQuizConfig] = useState({ type: 'multi', time: 45, attempts: 1, answerLink: '' });
-  const [editingQuizId, setEditingQuizId] = useState(null);
-
-  const handleAddChapter = (e) => {
-    e.preventDefault();
-    if (!selectedGrade || !newChapterName.trim()) return;
-
-    const newChap = { id: `ch${Date.now()}`, gradeId: selectedGrade, name: newChapterName.trim() };
-    setDb({ ...db, chapters: [...db.chapters, newChap] });
-    setShowAddChapter(false);
-    setNewChapterName('');
-    showToast('Thêm chương học thành công!');
-  };
-
-  const handleEditChapter = (chap) => {
-    const newName = prompt('Nhập tên chương mới:', chap.name);
-    if (newName && newName.trim()) {
-      const updatedChapters = db.chapters.map(c => c.id === chap.id ? { ...c, name: newName.trim() } : c);
-      setDb({ ...db, chapters: updatedChapters });
-      showToast('Đã cập nhật tên chương!');
-    }
-  };
-
-  const handleDeleteChapter = (chapId) => {
-    if (window.confirm('Xóa chương này sẽ đồng thời xóa toàn bộ các bài học bên trong. Thầy có chắc chắn muốn xóa?')) {
-      const updatedChapters = db.chapters.filter(c => c.id !== chapId);
-      const updatedLessons = db.lessons.filter(l => l.chapterId !== chapId);
-      setDb({ ...db, chapters: updatedChapters, lessons: updatedLessons });
-      showToast('Đã xóa chương học!');
-    }
-  };
-
-  const handleAddLesson = (e) => {
-    e.preventDefault();
-    if (!selectedChapter || !newLessonName.trim()) return;
-
-    const newLes = { id: `l${Date.now()}`, chapterId: selectedChapter, name: newLessonName.trim() };
-    setDb({ ...db, lessons: [...db.lessons, newLes] });
-    setShowAddLesson(false);
-    setNewLessonName('');
-    showToast('Thêm bài học thành công!');
-  };
-
-  const handleEditLesson = (les) => {
-    const newName = prompt('Nhập tên bài học mới:', les.name);
-    if (newName && newName.trim()) {
-      const updatedLessons = db.lessons.map(l => l.id === les.id ? { ...l, name: newName.trim() } : l);
-      setDb({ ...db, lessons: updatedLessons });
-      showToast('Đã cập nhật tên bài học!');
-    }
-  };
-
-  const handleDeleteLesson = (lesId) => {
-    if (window.confirm('Thầy có chắc chắn muốn xóa bài học này không?')) {
-      const updatedLessons = db.lessons.filter(l => l.id !== lesId);
-      const updatedMaterials = db.materials.filter(m => m.lessonId !== lesId);
-      setDb({ ...db, lessons: updatedLessons, materials: updatedMaterials });
-      showToast('Đã xóa bài học!');
-    }
-  };
-
-  const handleAddMaterial = (e) => {
-    e.preventDefault();
-    if (!selectedLesson) return showToast('Vui lòng chọn bài học ở cột trái trước!', 'error');
-    if (!matForm.name.trim()) return showToast('Vui lòng nhập tên học liệu', 'error');
-
-    const newMatId = `m${Date.now()}`;
-    const newMat = {
-      id: newMatId,
-      lessonId: selectedLesson,
-      ...matForm,
-      quizConfig: matForm.type === 'quiz' ? quizConfig : null,
-      questions: [],
-      assignedClassIds: []
-    };
-
-    setDb({ ...db, materials: [...db.materials, newMat] });
-    setShowAddMaterial(false);
-    setMatForm({ name: '', type: 'theory', link: '' });
-    showToast('Gắn học liệu thành công!');
-
-    if (matForm.type === 'quiz') {
-      setEditingQuizId(newMatId);
-    }
-  };
-
-  const handleSaveAssignment = (quizId, selectedClassIds) => {
-    const updatedMaterials = db.materials.map(m => {
-      if (m.id === quizId) {
-        return { ...m, assignedClassIds: selectedClassIds };
-      }
-      return m;
-    });
-    setDb({ ...db, materials: updatedMaterials });
-    if (showToast) showToast('Đã cập nhật phân quyền giao bài cho lớp thành công!');
-  };
-
-  if (editingQuizId) {
-    return <QuizEditor db={db} setDb={setDb} quizId={editingQuizId} onClose={() => setEditingQuizId(null)} showToast={showToast} />;
-  }
-
-  return (
-    <div className="h-full flex flex-col md:flex-row bg-white">
-      <div className="w-full md:w-1/3 border-r border-gray-200 flex flex-col overflow-y-auto">
-        <div className="p-3 border-b bg-gray-50 grid grid-cols-2 gap-2">
-          <button 
-            onClick={() => selectedGrade ? setShowAddChapter(true) : showToast('Vui lòng chọn Khối trước!', 'error')} 
-            className="py-2 bg-white border border-gray-300 hover:bg-gray-100 rounded-lg text-xs font-bold flex justify-center items-center gap-1.5 shadow-2xs"
-          >
-            <Plus size={14}/> Thêm Chương
-          </button>
-          <button 
-            onClick={() => selectedChapter ? setShowAddLesson(true) : showToast('Vui lòng chọn Chương trước!', 'error')} 
-            className="py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-xs font-bold flex justify-center items-center gap-1.5 shadow-2xs"
-          >
-            <Plus size={14}/> Thêm Bài
-          </button>
-        </div>
-
-        <div className="p-4 space-y-3">
-          {db.grades?.map(grade => (
-            <div key={grade.id} className="space-y-1">
-              <div 
-                className={`font-bold p-2.5 rounded-lg cursor-pointer text-sm transition-colors ${
-                  selectedGrade === grade.id ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`} 
-                onClick={() => { setSelectedGrade(grade.id); setSelectedChapter(null); setSelectedLesson(null); }}
-              >
-                {grade.name}
-              </div>
-
-              {selectedGrade === grade.id && (
-                <div className="ml-3 pl-3 border-l-2 border-blue-100 space-y-2 pt-1">
-                  {db.chapters?.filter(c => c.gradeId === grade.id).map(chap => (
-                    <div key={chap.id} className="space-y-1">
-                      <div 
-                        className={`p-2 rounded-lg text-xs font-bold cursor-pointer flex justify-between items-center transition-colors ${
-                          selectedChapter === chap.id ? 'bg-blue-50 text-blue-800 border border-blue-200' : 'text-gray-700 hover:bg-gray-50'
-                        }`} 
-                        onClick={() => { setSelectedChapter(chap.id); setSelectedLesson(null); }}
-                      >
-                        <span className="truncate pr-2">{chap.name}</span>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Edit size={13} className="text-gray-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); handleEditChapter(chap); }} title="Sửa tên chương" />
-                          <Trash2 size={13} className="text-gray-400 hover:text-red-600" onClick={(e) => { e.stopPropagation(); handleDeleteChapter(chap.id); }} title="Xóa chương" />
-                        </div>
-                      </div>
-
-                      {selectedChapter === chap.id && (
-                        <div className="ml-3 pl-3 border-l-2 border-gray-100 space-y-1">
-                          {db.lessons?.filter(l => l.chapterId === chap.id).map(les => (
-                            <div 
-                              key={les.id} 
-                              className={`p-2 rounded-lg text-xs cursor-pointer flex justify-between items-center transition-colors ${
-                                selectedLesson === les.id ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200' : 'text-gray-600 hover:bg-gray-50'
-                              }`} 
-                              onClick={() => setSelectedLesson(les.id)}
-                            >
-                              <span className="truncate pr-2">• {les.name}</span>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <Edit size={13} className="text-gray-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); handleEditLesson(les); }} title="Sửa tên bài" />
-                                <Trash2 size={13} className="text-gray-400 hover:text-red-600" onClick={(e) => { e.stopPropagation(); handleDeleteLesson(les.id); }} title="Xóa bài học" />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="w-full md:w-2/3 bg-gray-50 p-6 overflow-y-auto">
-        {!selectedLesson ? (
-          <div className="h-full flex items-center justify-center text-gray-400 italic">
-            Hãy chọn một Bài học ở cột bên trái để quản lý học liệu và đề thi.
-          </div>
-        ) : (
-          <div>
-            <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl border shadow-2xs">
-              <div>
-                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Bài học đang chọn:</span>
-                <h2 className="text-lg font-bold text-gray-900">{db.lessons?.find(l => l.id === selectedLesson)?.name}</h2>
-              </div>
-              <button 
-                onClick={() => setShowAddMaterial(true)} 
-                className="bg-gray-900 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-black shadow-sm transition-transform active:scale-95"
-              >
-                <Plus size={16}/> Gắn học liệu / Đề thi
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {['theory', 'video', 'quiz'].map(type => {
-                const mats = db.materials?.filter(m => m.lessonId === selectedLesson && m.type === type) || [];
-                if (mats.length === 0) return null;
-                
-                const typeName = type === 'theory' ? 'Tài liệu Lý thuyết' : type === 'video' ? 'Video Thí nghiệm - Hiện tượng' : 'Đề ôn tập - Kiểm tra trắc nghiệm';
-                
-                return (
-                  <div key={type} className="bg-white border border-gray-200 rounded-xl shadow-2xs p-4">
-                    <h3 className="font-bold text-sm text-blue-900 border-b pb-2 mb-3 uppercase tracking-wide flex items-center gap-2">
-                      {type === 'theory' && <FileText size={16}/>}
-                      {type === 'video' && <Video size={16}/>}
-                      {type === 'quiz' && <FileQuestion size={16}/>}
-                      {typeName}
-                    </h3>
-                    <ul className="space-y-2">
-                      {mats.map(m => (
-                        <li key={m.id} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
-                          <div>
-                            <span className="font-bold text-gray-800 text-sm">{m.name}</span>
-                            {m.type === 'quiz' && m.quizConfig && (
-                              <div className="text-xs text-gray-500 mt-0.5 font-medium flex items-center gap-2">
-                                <span>⏱️ {m.quizConfig.time} phút</span>
-                                <span>🔄 Tối đa {m.quizConfig.attempts} lần</span>
-                                <span className="text-blue-600 font-bold">({m.assignedClassIds?.length > 0 ? `Đã giao ${m.assignedClassIds.length} lớp` : 'Giao tất cả các lớp'})</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            {m.type === 'quiz' && (
-                              <>
-                                <button 
-                                  onClick={() => setAssigningQuizId(m.id)} 
-                                  className="text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
-                                >
-                                  Giao lớp
-                                </button>
-                                <button 
-                                  onClick={() => setEditingQuizId(m.id)} 
-                                  className="text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
-                                >
-                                  Soạn câu hỏi
-                                </button>
-                              </>
-                            )}
-                            <button 
-                              onClick={() => {
-                                if (window.confirm('Xóa học liệu này?')) {
-                                  setDb({ ...db, materials: db.materials.filter(x => x.id !== m.id) });
-                                  showToast('Đã xóa học liệu');
-                                }
-                              }} 
-                              className="text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
-                            >
-                              Xóa
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {showAddChapter && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="font-bold text-lg mb-4 text-gray-900">Thêm Chương mới</h3>
-            <form onSubmit={handleAddChapter}>
-              <input 
-                required 
-                type="text" 
-                placeholder="VD: Chương 1. Dao động cơ" 
-                className="w-full p-3 border rounded-xl text-sm font-medium outline-none mb-4 bg-gray-50" 
-                value={newChapterName} 
-                onChange={e => setNewChapterName(e.target.value)} 
-              />
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setShowAddChapter(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-sm">Hủy</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm shadow-sm">Lưu</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showAddLesson && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="font-bold text-lg mb-4 text-gray-900">Thêm Bài học mới</h3>
-            <form onSubmit={handleAddLesson}>
-              <input 
-                required 
-                type="text" 
-                placeholder="VD: Bài 1. Dao động điều hòa" 
-                className="w-full p-3 border rounded-xl text-sm font-medium outline-none mb-4 bg-gray-50" 
-                value={newLessonName} 
-                onChange={e => setNewLessonName(e.target.value)} 
-              />
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setShowAddLesson(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-sm">Hủy</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm shadow-sm">Lưu</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showAddMaterial && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
-            <h3 className="font-bold text-lg mb-4 pb-2 border-b text-gray-900">Gắn học liệu / Tạo đề thi</h3>
-            <form onSubmit={handleAddMaterial} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Loại học liệu</label>
-                  <select 
-                    className="w-full p-2.5 border rounded-xl bg-gray-50 text-sm font-medium outline-none" 
-                    value={matForm.type} 
-                    onChange={e => setMatForm({ ...matForm, type: e.target.value })}
-                  >
-                    <option value="theory">Tài liệu Lý thuyết</option>
-                    <option value="video">Video Thí nghiệm</option>
-                    <option value="quiz">Đề kiểm tra trắc nghiệm</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Tên học liệu</label>
-                  <input 
-                    required 
-                    type="text" 
-                    placeholder="VD: Đề kiểm tra 15 phút" 
-                    className="w-full p-2.5 border rounded-xl bg-gray-50 text-sm font-medium outline-none" 
-                    value={matForm.name} 
-                    onChange={e => setMatForm({ ...matForm, name: e.target.value })} 
-                  />
-                </div>
-              </div>
-
-              {matForm.type !== 'quiz' && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Đường dẫn URL (Link Drive / Youtube)</label>
-                  <input 
-                    required 
-                    type="url" 
-                    placeholder="https://..." 
-                    className="w-full p-2.5 border rounded-xl bg-gray-50 text-sm font-medium outline-none" 
-                    value={matForm.link} 
-                    onChange={e => setMatForm({ ...matForm, link: e.target.value })} 
-                  />
-                </div>
-              )}
-
-              {matForm.type === 'quiz' && (
-                <div className="border-t pt-4 bg-gray-50 p-4 rounded-xl space-y-3">
-                  <h4 className="font-bold text-xs text-gray-700 uppercase">Cấu hình đề thi</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1 font-medium">Thời gian (phút)</label>
-                      <input 
-                        type="number" 
-                        min="1" 
-                        className="w-full p-2 border rounded-lg text-sm bg-white" 
-                        value={quizConfig.time} 
-                        onChange={e => setQuizConfig({ ...quizConfig, time: parseInt(e.target.value) || 1 })} 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1 font-medium">Số lần làm tối đa</label>
-                      <input 
-                        type="number" 
-                        min="1" 
-                        className="w-full p-2 border rounded-lg text-sm bg-white" 
-                        value={quizConfig.attempts} 
-                        onChange={e => setQuizConfig({ ...quizConfig, attempts: parseInt(e.target.value) || 1 })} 
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1 font-medium">Link giải chi tiết / Đáp án (Tùy chọn)</label>
-                    <input 
-                      type="url" 
-                      placeholder="https://drive.google.com/..." 
-                      className="w-full p-2 border rounded-lg text-sm bg-white" 
-                      value={quizConfig.answerLink} 
-                      onChange={e => setQuizConfig({ ...quizConfig, answerLink: e.target.value })} 
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-3 border-t">
-                <button type="button" onClick={() => setShowAddMaterial(false)} className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-sm">Hủy</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm shadow-sm">Lưu lại</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {assigningQuizId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl space-y-4">
-            <h3 className="font-bold text-lg text-gray-900">Phân công giao bài cho các lớp</h3>
-            <p className="text-xs text-gray-500">Chọn những lớp được phép làm bài kiểm tra này (Nếu bỏ chọn tất cả, bài sẽ hiển thị cho mọi lớp):</p>
-            
-            <div className="space-y-2 max-h-60 overflow-y-auto border p-3 rounded-xl bg-gray-50">
-              {db.classes?.map(c => {
-                const currentQuiz = db.materials.find(m => m.id === assigningQuizId);
-                const isChecked = currentQuiz?.assignedClassIds?.includes(c.id) || false;
-
-                return (
-                  <label key={c.id} className="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-200 cursor-pointer hover:bg-blue-50 transition-colors">
-                    <input 
-                      type="checkbox" 
-                      defaultChecked={isChecked}
-                      onChange={(e) => {
-                        const currentList = currentQuiz?.assignedClassIds || [];
-                        let newList = [];
-                        if (e.target.checked) {
-                          newList = [...currentList, c.id];
-                        } else {
-                          newList = currentList.filter(id => id !== c.id);
-                        }
-                        handleSaveAssignment(assigningQuizId, newList);
-                      }}
-                      className="w-4 h-4 text-blue-600 rounded"
-                    />
-                    <span className="font-bold text-sm text-gray-800">{c.name}</span>
-                  </label>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button 
-                onClick={() => setAssigningQuizId(null)} 
-                className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-sm hover:bg-gray-200"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * ==========================================
- * MODULE: THỐNG KÊ KẾT QUẢ & ĐIỂM SỐ (ResultManagement.jsx)
- * Chức năng: Thống kê điểm số học sinh, lọc theo lớp và đề thi, xuất file Excel bảng điểm.
- * ==========================================
- */
-function ResultManagement({ db, showToast }) {
-  const [selectedClassId, setSelectedClassId] = useState('');
-  const [selectedQuizId, setSelectedQuizId] = useState('');
-
-  const studentsInClass = db.studentsList?.filter(s => s.classId === selectedClassId) || [];
-
-  const exportToExcel = () => {
-    if (!selectedClassId) {
-      showToast('Vui lòng chọn lớp cần xuất file Excel!', 'error');
-      return;
-    }
-
-    const className = db.classes?.find(c => c.id === selectedClassId)?.name || 'Lop';
-    
-    const excelData = studentsInClass.map((student, idx) => {
-      const attempts = db.quizAttempts?.filter(a => {
-        const matchStudent = a.studentId === student.id;
-        const matchQuiz = selectedQuizId ? a.quizId === selectedQuizId : true;
-        return matchStudent && matchQuiz;
-      }) || [];
-
-      const scoreHistory = attempts.map((att, i) => `Lần ${i+1}: ${att.score}đ (${att.duration || 'N/A'})`).join(' | ');
-      const maxScore = attempts.length > 0 ? Math.max(...attempts.map(a => parseFloat(a.score || 0))) : 0;
-
-      return {
-        "STT": idx + 1,
-        "Họ và tên": student.name,
-        "Số điện thoại": student.phone,
-        "Số lần làm bài": attempts.length,
-        "Điểm cao nhất": attempts.length > 0 ? maxScore : 'Chưa làm',
-        "Chi tiết lịch sử": scoreHistory || 'Chưa làm bài'
-      };
-    });
-
-    const ws = XLSX.utils.json_to_sheet(excelData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "BangDiem");
-    XLSX.writeFile(wb, `BangDiem_${className}.xlsx`);
-    
-    if (showToast) showToast('Đã xuất file Excel bảng điểm thành công!');
-  };
-
-  return (
-    <div className="h-full flex flex-col bg-gray-50 font-sans p-4 sm:p-6 overflow-y-auto">
-      <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <BarChart2 className="text-blue-600" size={22}/> Thống Kê Kết Quả Học Tập
-          </h2>
-          <p className="text-xs text-gray-500 mt-0.5">Theo dõi lịch sử làm bài, điểm số và xuất báo cáo điểm của lớp.</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Filter size={16} className="text-gray-400 shrink-0"/>
-            <select 
-              value={selectedClassId}
-              onChange={(e) => { setSelectedClassId(e.target.value); setSelectedQuizId(''); }}
-              className="p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm font-bold text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">-- Chọn lớp học --</option>
-              {db.classes?.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <select 
-            disabled={!selectedClassId}
-            value={selectedQuizId}
-            onChange={(e) => setSelectedQuizId(e.target.value)}
-            className="p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm font-medium text-gray-800 outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-          >
-            <option value="">-- Tất cả các bài kiểm tra --</option>
-            {db.materials?.filter(m => m.type === 'quiz').map(q => (
-              <option key={q.id} value={q.id}>{q.name}</option>
-            ))}
-          </select>
-
-          <button 
-            onClick={exportToExcel}
-            disabled={!selectedClassId}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-2xs flex items-center gap-2 transition-transform active:scale-95 disabled:opacity-50"
-          >
-            <FileSpreadsheet size={16}/> Xuất Excel
-          </button>
-        </div>
-      </div>
-
-      {!selectedClassId ? (
-        <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center my-auto">
-          <Users size={48} className="mx-auto text-gray-300 mb-3"/>
-          <p className="text-gray-600 font-bold mb-1">Chưa chọn lớp học</p>
-          <p className="text-xs text-gray-400">Thầy hãy chọn một lớp ở khung phía trên để hiển thị bảng điểm chi tiết.</p>
-        </div>
-      ) : studentsInClass.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center text-gray-400 italic">
-          Lớp này chưa có danh sách học sinh.
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b bg-gray-50 font-bold text-gray-800 text-sm flex justify-between items-center">
-            <span>Danh sách kết quả lớp: {db.classes?.find(c => c.id === selectedClassId)?.name}</span>
-            <span className="text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-bold">
-              Sĩ số: {studentsInClass.length} học sinh
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-gray-100/70 text-gray-600 uppercase text-xs tracking-wider">
-                <tr>
-                  <th className="p-3.5 text-center">STT</th>
-                  <th className="p-3.5">Họ và tên học sinh</th>
-                  <th className="p-3.5">Số điện thoại</th>
-                  <th className="p-3.5">Lịch sử làm bài {selectedQuizId ? '(Đã lọc bài)' : '(Tất cả bài)'}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {studentsInClass.map((student, idx) => {
-                  const attempts = db.quizAttempts?.filter(a => {
-                    const matchStudent = a.studentId === student.id;
-                    const matchQuiz = selectedQuizId ? a.quizId === selectedQuizId : true;
-                    return matchStudent && matchQuiz;
-                  }) || [];
-
-                  return (
-                    <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="p-3.5 text-center text-gray-500 font-medium">{idx + 1}</td>
-                      <td className="p-3.5 font-bold text-gray-900">{student.name}</td>
-                      <td className="p-3.5 text-gray-600">{student.phone}</td>
-                      <td className="p-3.5">
-                        {attempts.length === 0 ? (
-                          <span className="text-xs text-gray-400 italic bg-gray-100 px-2.5 py-1 rounded-md">Chưa làm bài</span>
-                        ) : (
-                          <div className="space-y-1.5 py-1">
-                            {attempts.map((att, aIdx) => {
-                              const quizMat = db.materials?.find(m => m.id === att.quizId);
-                              return (
-                                <div key={aIdx} className="flex flex-wrap items-center gap-2 bg-blue-50/60 border border-blue-100 px-3 py-1.5 rounded-lg text-xs">
-                                  <span className="font-bold text-blue-900">Lần {aIdx + 1}:</span>
-                                  {quizMat && <span className="text-gray-600 font-medium truncate max-w-[180px]">[{quizMat.name}]</span>}
-                                  
-                                  <span className="bg-green-600 text-white font-black px-2 py-0.5 rounded shadow-2xs flex items-center gap-1">
-                                    <Award size={12}/> {att.score} đ
-                                  </span>
-                                  
-                                  <span className="text-gray-600 flex items-center gap-1 font-medium">
-                                    <Clock size={12} className="text-blue-500"/> {att.duration || 'N/A'}
-                                  </span>
-
-                                  <span className="text-gray-500 flex items-center gap-1">
-                                    <Calendar size={12} className="text-indigo-500"/> {att.timestamp || 'Mới đây'}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * ==========================================
-/**
- * ==========================================
- * MAIN COMPONENT & STATE MANAGEMENT (App.jsx)
+ * COMPONENT CHÍNH (App / Main Platform Router)
  * ==========================================
  */
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('classes');
   const [activeQuiz, setActiveQuiz] = useState(null);
-  const [toastMessage, setToastMessage] = useState(null);
+  const [editingQuizId, setEditingQuizId] = useState(null);
 
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
-
-  // Dữ liệu mẫu mặc định ban đầu nếu trên đám mây chưa có gì
-  const defaultDbData = {
+  // Cơ sở dữ liệu mẫu ban đầu
+  const [db, setDb] = useState({
     grades: [
       { id: 'g10', name: 'Khối 10' },
       { id: 'g11', name: 'Khối 11' },
-      { id: 'g12', name: 'Khối 12' },
+      { id: 'g12', name: 'Khối 12' }
     ],
     classes: [
-      { id: 'c1', gradeId: 'g12', name: '12A1' },
-      { id: 'c2', gradeId: 'g12', name: '12A2' },
-      { id: 'c3', gradeId: 'g11', name: '11A1' },
-    ],
-    studentsList: [
-      { id: 's1', classId: 'c1', name: 'Nguyễn Văn An', gender: 'Nam', phone: '0901234567', email: 'an@gmail.com', done: 2 },
-      { id: 's2', classId: 'c1', name: 'Trần Thị Bình', gender: 'Nữ', phone: '0907654321', email: 'binh@gmail.com', done: 1 },
+      { id: 'c10a1', name: '10A1', gradeId: 'g10' },
+      { id: 'c11a1', name: '11A1', gradeId: 'g11' },
+      { id: 'c12a1', name: '12A1', gradeId: 'g12' }
     ],
     chapters: [
-      { id: 'ch12_1', gradeId: 'g12', name: 'Chương I. Vật lí nhiệt' },
-      { id: 'ch12_2', gradeId: 'g12', name: 'Chương II. Khí lí tưởng' },
+      { id: 'chap1', name: 'Chương 1: Động học chất điểm', gradeId: 'g10' },
+      { id: 'chap2', name: 'Chương 1: Điện tích - Điện trường', gradeId: 'g11' },
+      { id: 'chap3', name: 'Chương 1: Dao động cơ', gradeId: 'g12' }
     ],
     lessons: [
-      { id: 'l12_1', chapterId: 'ch12_1', name: 'Bài 1. Cấu trúc của chất. Sự chuyển thể' },
-      { id: 'l12_2', chapterId: 'ch12_1', name: 'Bài 2. Nội năng. Định luật I của nhiệt động lực học' },
+      { id: 'les1', name: 'Bài 1: Chuyển động thẳng đều', chapterId: 'chap1' },
+      { id: 'les2', name: 'Bài 1: Dao động điều hòa', chapterId: 'chap3' }
+    ],
+    studentsList: [
+      { id: 'st1', name: 'Nguyễn Văn A', classId: 'c12a1', phone: '0912345678' }
     ],
     materials: [
       {
-        id: 'm1',
-        lessonId: 'l12_1',
-        type: 'theory',
-        name: 'Tài liệu SGK Vật lí 12 - Bài 1',
-        link: 'https://vietjack.com'
-      },
-      {
-        id: 'm2',
-        lessonId: 'l12_1',
+        id: 'mat1',
+        lessonId: 'les2',
         type: 'quiz',
-        name: 'Đề kiểm tra 15 phút - Bài 1',
-        quizConfig: { time: 15, attempts: 2, answerLink: 'https://youtube.com', sectionScores: { multiScore: 4, tfScore: 3, numScore: 3 } },
-        assignedClassIds: [],
-        questions: [
-          {
-            id: 'q1',
-            type: 'multi',
-            content: 'Công thức tính độ dịch chuyển trong dao động điều hòa là $x = A \\cos(\\omega t + \\varphi)$. Biên độ $A$ có đơn vị là:',
-            options: ['mét (m)', 'giây (s)', 'hertz (Hz)', 'radian (rad)'],
-            answerMCQ: 'A'
-          }
-        ]
+        name: 'Đề luyện tập Dao động điều hòa #1',
+        quizConfig: {
+          time: 15,
+          attempts: 2,
+          sectionScores: { multiScore: 4.0, tfScore: 3.0, numScore: 3.0 }
+        },
+        questions: []
       }
     ],
     quizAttempts: []
+  });
+
+  const showToast = (msg) => {
+    alert(msg);
   };
 
-  const [db, setDb] = useState(defaultDbData);
-
-  // Lắng nghe dữ liệu thời gian thực từ Firebase Firestore (Đồng bộ đa thiết bị)
-  useEffect(() => {
-    const docRef = doc(firestoreDb, 'appData', 'mainDB');
-
-    const unsubscribe = onSnapshot(docRef, async (docSnap) => {
-      if (docSnap.exists()) {
-        setDb(docSnap.data());
-      } else {
-        await setDoc(docRef, defaultDbData);
-        setDb(defaultDbData);
-      }
-    }, (error) => {
-      console.error("Lỗi đọc dữ liệu từ Firebase: ", error);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // Hàm cập nhật dữ liệu đẩy lên đám mây (Firebase)
-  const updateDatabase = async (newDbOrUpdater) => {
-    let updatedData;
-    if (typeof newDbOrUpdater === 'function') {
-      updatedData = newDbOrUpdater(db);
-    } else {
-      updatedData = newDbOrUpdater;
-    }
-
-    setDb(updatedData); // Cập nhật giao diện ngay lập tức
-    
-    try {
-      const docRef = doc(firestoreDb, 'appData', 'mainDB');
-      await setDoc(docRef, updatedData); // Lưu lên Firebase
-    } catch (error) {
-      console.error("Lỗi lưu dữ liệu lên Firebase: ", error);
-      showToast("Lỗi đồng bộ dữ liệu lên máy chủ!");
-    }
+  const handleLoginSuccess = (user) => {
+    setCurrentUser(user);
   };
 
-  const handleLoginSuccess = (userData) => {
-    setCurrentUser(userData);
-  };
-
-  const handleConfirmLink = ({ studentId, classId }) => {
-    setCurrentUser({
-      ...currentUser,
-      linkedStudentId: studentId,
-      classId: classId
-    });
-    showToast('Xác thực tài khoản thành công!');
-  };
-
-  const handleSaveResult = (result) => {
-    const newAttempt = {
-      studentId: currentUser.linkedStudentId,
-      ...result,
-      timestamp: new Date().toLocaleTimeString() + ' ' + new Date().toLocaleDateString()
-    };
-
-    updateDatabase(prev => ({
+  const handleConfirmLink = (linkData) => {
+    setCurrentUser(prev => ({
       ...prev,
-      quizAttempts: [...(prev.quizAttempts || []), newAttempt]
+      linkedStudentId: linkData.studentId,
+      classId: linkData.classId
+    }));
+  };
+
+  const handleSaveResult = (attempt) => {
+    setDb(prev => ({
+      ...prev,
+      quizAttempts: [...(prev.quizAttempts || []), attempt]
     }));
   };
 
@@ -2792,88 +1420,44 @@ export default function App() {
 
   if (currentUser.role === 'student' && !currentUser.linkedStudentId) {
     return (
-      <StudentLinkProfile 
-        currentUser={currentUser} 
-        db={db} 
-        onConfirmLink={handleConfirmLink} 
-        onLogout={() => setCurrentUser(null)} 
+      <StudentLinkProfile
+        currentUser={currentUser}
+        db={db}
+        onConfirmLink={handleConfirmLink}
+        onLogout={() => setCurrentUser(null)}
       />
     );
   }
 
   if (activeQuiz) {
     return (
-      <QuizPlayer 
-        quiz={activeQuiz} 
-        currentUser={currentUser} 
-        onFinish={() => setActiveQuiz(null)} 
-        onSaveResult={handleSaveResult} 
+      <QuizPlayer
+        quiz={activeQuiz}
+        currentUser={currentUser}
+        onFinish={() => setActiveQuiz(null)}
+        onSaveResult={handleSaveResult}
       />
     );
   }
 
-  if (currentUser.role === 'student') {
+  if (editingQuizId) {
     return (
-      <StudentDashboard 
-        currentUser={currentUser} 
-        db={db} 
-        onLogout={() => setCurrentUser(null)} 
-        onStartQuiz={(quizMat) => setActiveQuiz(quizMat)} 
+      <QuizEditor
+        db={db}
+        setDb={setDb}
+        quizId={editingQuizId}
+        onClose={() => setEditingQuizId(null)}
+        showToast={showToast}
       />
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col font-sans">
-      <header className="bg-gray-900 text-white p-4 shadow-md flex justify-between items-center z-10">
-        <div className="flex items-center gap-3">
-          <ShieldCheck className="text-blue-400" size={26} />
-          <div>
-            <h1 className="text-base sm:text-lg font-bold uppercase tracking-wider">Hệ Thống Quản Trị - Thầy Lê Công Huynh</h1>
-            <p className="text-xs text-gray-400">Quản lý lớp học, học liệu và thống kê điểm số</p>
-          </div>
-        </div>
-        <button 
-          onClick={() => setCurrentUser(null)} 
-          className="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg flex items-center gap-1.5 text-sm font-medium transition-colors border border-gray-700"
-        >
-          <LogOut size={16}/> Đăng xuất
-        </button>
-      </header>
-
-      <div className="flex border-b border-gray-200 bg-white shadow-xs">
-        <button 
-          onClick={() => setActiveTab('classes')}
-          className={`flex-1 py-4 px-6 font-bold text-sm flex items-center justify-center gap-2 border-b-2 transition-colors ${activeTab === 'classes' ? 'border-blue-600 text-blue-700 bg-blue-50/50' : 'border-transparent text-gray-600 hover:bg-gray-50'}`}
-        >
-          <Users size={18}/> Quản Lý Lớp & Học Sinh
-        </button>
-        <button 
-          onClick={() => setActiveTab('data')}
-          className={`flex-1 py-4 px-6 font-bold text-sm flex items-center justify-center gap-2 border-b-2 transition-colors ${activeTab === 'data' ? 'border-blue-600 text-blue-700 bg-blue-50/50' : 'border-transparent text-gray-600 hover:bg-gray-50'}`}
-        >
-          <Database size={18}/> Quản Lý Học Liệu & Đề Thi
-        </button>
-        <button 
-          onClick={() => setActiveTab('results')}
-          className={`flex-1 py-4 px-6 font-bold text-sm flex items-center justify-center gap-2 border-b-2 transition-colors ${activeTab === 'results' ? 'border-blue-600 text-blue-700 bg-blue-50/50' : 'border-transparent text-gray-600 hover:bg-gray-50'}`}
-        >
-          <BarChart2 size={18}/> Thống Kê Kết Quả & Điểm
-        </button>
-      </div>
-
-      <main className="flex-1 overflow-hidden relative">
-        {activeTab === 'classes' && <ClassManagement db={db} setDb={updateDatabase} showToast={showToast} />}
-        {activeTab === 'data' && <DataManagement db={db} setDb={updateDatabase} showToast={showToast} />}
-        {activeTab === 'results' && <ResultManagement db={db} showToast={showToast} />}
-      </main>
-
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-bounce border border-gray-700">
-          <CheckCircle size={20} className="text-green-400 shrink-0" />
-          <span className="font-bold text-sm">{toastMessage}</span>
-        </div>
-      )}
-    </div>
+    <StudentDashboard
+      currentUser={currentUser}
+      db={db}
+      onLogout={() => setCurrentUser(null)}
+      onStartQuiz={(quiz) => setActiveQuiz(quiz)}
+    />
   );
 }
